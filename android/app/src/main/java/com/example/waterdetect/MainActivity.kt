@@ -19,6 +19,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.example.waterdetect.cv.CornerDetector
 import com.example.waterdetect.cv.OpenCvEngine
+import com.example.waterdetect.model.BoardPresets
 import com.example.waterdetect.databinding.ActivityMainBinding
 import com.google.android.material.snackbar.Snackbar
 import java.io.File
