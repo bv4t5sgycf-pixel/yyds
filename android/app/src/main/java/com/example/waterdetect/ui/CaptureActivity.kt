@@ -9,6 +9,7 @@ import com.example.waterdetect.R
 import com.example.waterdetect.cv.CornerDetector
 import com.example.waterdetect.cv.OpenCvEngine
 import com.example.waterdetect.databinding.ActivityCaptureBinding
+import kotlin.math.max
 
 class CaptureActivity : AppCompatActivity() {
 
