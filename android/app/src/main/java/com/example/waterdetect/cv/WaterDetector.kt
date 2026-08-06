@@ -1,5 +1,6 @@
 package com.example.waterdetect.cv
 
+import org.opencv.calib3d.Calib3d
 import org.opencv.core.*
 import org.opencv.imgproc.Imgproc
 import org.opencv.utils.MatVector
@@ -278,7 +279,7 @@ object WaterDetector {
             Point(0.0, (outH - 1).toDouble()),
             Point((outW - 1).toDouble(), (outH - 1).toDouble())
         )
-        val m = Imgproc.getPerspectiveTransform(srcMat, dstMat)
+        val m = Calib3d.getPerspectiveTransform(srcMat, dstMat)
         val warped = Mat()
         Imgproc.warpPerspective(
             image, warped, m,
