@@ -1,148 +1,232 @@
 package com.example.waterdetect.cv
 
-import org.opencv.core.*
+import android.graphics.Bitmap
+import org.opencv.android.Utils
+import org.opencv.core.Core
+import org.opencv.core.CvType
+import org.opencv.core.Mat
+import org.opencv.core.MatOfPoint
+import org.opencv.core.MatOfPoint2f
+import org.opencv.core.Point
+import org.opencv.core.Scalar
+import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
 import org.opencv.utils.MatVector
-import kotlin.math.*
+import kotlin.math.hypot
 
-/**
- * 四角红点自动检测（Kotlin 翻译自 PWA corners.js）。
- * 输入为已转换的 BGR Mat（原图尺寸），输出归一化四角位置。
- * 作为初始定位，用户仍可用放大镜吸附手动精确修正。
- */
 object CornerDetector {
 
-    private data class DefaultCorner(val name: String, val color: String, val rx: Double, val ry: Double)
+    private const val SNAP_FRAC_WEAK = 0.45
+    private const val SNAP_FRAC_MID = 0.90
+    private const val SNAP_FRAC_STRONG = 1.0
+    private const val LOCK_STICK = 0.05
 
-    private val DEFAULT_CORNERS: Map<String, List<DefaultCorner>> = mapOf(
-        "Board1008" to listOf(
-            DefaultCorner("TL", "#e74c3c", 0.14, 0.16),
-            DefaultCorner("TR", "#2ecc71", 0.86, 0.16),
-            DefaultCorner("BL", "#3498db", 0.14, 0.84),
-            DefaultCorner("BR", "#f39c12", 0.86, 0.84)
-        ),
-        "Board1200" to listOf(
-            DefaultCorner("TL", "#e74c3c", 0.14, 0.16),
-            DefaultCorner("TR", "#2ecc71", 0.86, 0.16),
-            DefaultCorner("BL", "#3498db", 0.14, 0.84),
-            DefaultCorner("BR", "#f39c12", 0.86, 0.84)
-        ),
-        "Board4000" to listOf(
-            DefaultCorner("TL", "#e74c3c", 0.14, 0.16),
-            DefaultCorner("TR", "#2ecc71", 0.86, 0.16),
-            DefaultCorner("BL", "#3498db", 0.14, 0.84),
-            DefaultCorner("BR", "#f39c12", 0.86, 0.84)
-        )
-    )
-
-    data class CornerPoint(
+    data class DetectedCorner(
         val name: String,
-        val color: String,
         val rx: Double,
         val ry: Double,
-        val snap: Pair<Double, Double>
+        val color: String
     )
 
-    data class CornerDetectResult(
+    data class Result(
         val success: Boolean,
-        val cornerPoints: List<CornerPoint>,
+        val corners: List<DetectedCorner>,
         val detectedCount: Int,
         val fallback: Boolean
     )
 
-    private fun round4(x: Double): Double = Math.round(x * 10000) / 10000.0
-
-    private data class Cand(val nx: Double, val ny: Double, val area: Double)
-
-    private fun pickCorners(cands: List<Cand>, defaults: List<DefaultCorner>): List<CornerPoint> {
-        val result = mutableListOf<CornerPoint>()
-        val used = mutableSetOf<Int>()
-        for (d in defaults) {
-            var best = -1
-            var bestD = Double.MAX_VALUE
-            for (c in cands.indices) {
-                if (used.contains(c)) continue
-                val dist = Math.hypot(cands[c].nx - d.rx, cands[c].ny - d.ry)
-                if (dist < bestD) { bestD = dist; best = c }
-            }
-            if (best != -1 && bestD < 0.32) {
-                val cc = cands[best]
-                used.add(best)
-                val nx = round4(cc.nx); val ny = round4(cc.ny)
-                result.add(CornerPoint(d.name, d.color, nx, ny, nx to ny))
-            } else {
-                result.add(CornerPoint(d.name, d.color, d.rx, d.ry, d.rx to d.ry))
-            }
-        }
-        return result
-    }
-
-    fun detectRedCorners(mat: Mat, boardType: String = "Board1200"): CornerDetectResult {
-        val origW = mat.cols().toDouble()
-        val origH = mat.rows().toDouble()
-
-        val maxSide = 1000.0
-        val scale = min(1.0, maxSide / max(mat.cols(), mat.rows()))
-        val small = Mat()
-        if (scale < 1.0) {
-            Imgproc.resize(mat, small, Size(Math.round(mat.cols() * scale).toDouble(), Math.round(mat.rows() * scale).toDouble()), 0.0, 0.0, Imgproc.INTER_AREA)
-        } else {
-            mat.copyTo(small)
-        }
+    fun detectRedCorners(bitmap: Bitmap, boardType: String): Result {
+        val src = Mat()
+        Utils.bitmapToMat(bitmap, src)
 
         val hsv = Mat()
-        Imgproc.cvtColor(small, hsv, Imgproc.COLOR_BGR2HSV)
+        Imgproc.cvtColor(src, hsv, Imgproc.COLOR_RGB2HSV)
 
-        val m1 = Mat(); val m2 = Mat(); val mask = Mat()
-        Core.inRange(hsv, Scalar(0.0, 45.0, 40.0), Scalar(18.0, 255.0, 255.0), m1)
-        Core.inRange(hsv, Scalar(152.0, 40.0, 40.0), Scalar(180.0, 255.0, 255.0), m2)
-        Core.bitwise_or(m1, m2, mask)
+        val red1 = Mat()
+        val red2 = Mat()
+        Core.inRange(
+            hsv,
+            Scalar(0.0, 80.0, 50.0),
+            Scalar(10.0, 255.0, 255.0),
+            red1
+        )
+        Core.inRange(
+            hsv,
+            Scalar(160.0, 80.0, 50.0),
+            Scalar(180.0, 255.0, 255.0),
+            red2
+        )
 
-        val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, Size(3.0, 3.0))
-        val opened = Mat()
-        Imgproc.morphologyEx(mask, opened, Imgproc.MORPH_OPEN, kernel)
+        val redMask = Mat()
+        Core.bitwise_or(red1, red2, redMask)
+        red1.release()
+        red2.release()
+        hsv.release()
+
+        Imgproc.morphologyEx(
+            redMask, redMask, Imgproc.MORPH_CLOSE,
+            Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, Size(5.0, 5.0))
+        )
 
         val contours = MatVector()
-        val hier = Mat()
-        Imgproc.findContours(opened, contours, hier, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE)
-
-        val minArea = small.cols() * small.rows() * 0.00008
-        val cands = mutableListOf<Cand>()
-        for (k in 0 until contours.size()) {
-            val cnt = contours[k]
-            val area = Imgproc.contourArea(cnt)
-            if (area < minArea) continue
-            val rect = Imgproc.boundingRect(cnt)
-            val bw = rect.width; val bh = rect.height
-            if (bw < 1 || bh < 1) continue
-            val aspect = max(bw, bh).toDouble() / (min(bw, bh) + 1e-6)
-            if (aspect > 4.0) continue
-            val peri = Imgproc.arcLength(cnt, true)
-            val circ = if (peri > 0) (4 * Math.PI * area / (peri * peri + 1e-6)) else 0.0
-            if (circ < 0.25) continue
-            val mom = Imgproc.moments(cnt)
-            if (mom.m00 == 0.0) continue
-            val cx = mom.m10 / mom.m00
-            val cy = mom.m01 / mom.m00
-            val ox = cx / scale
-            val oy = cy / scale
-            cands.add(Cand(ox / origW, oy / origH, area))
-        }
-
-        val defaults = DEFAULT_CORNERS[boardType] ?: DEFAULT_CORNERS["Board1200"]!!
-        val cornerPoints = pickCorners(cands, defaults)
-
-        val detectedCount = cornerPoints.count { p ->
-            defaults.none { d -> Math.abs(p.rx - d.rx) <= 1e-4 && Math.abs(p.ry - d.ry) <= 1e-4 }
-        }
-
-        listOf(small, hsv, m1, m2, mask, kernel, opened, hier, contours).forEach { it.release() }
-
-        return CornerDetectResult(
-            success = detectedCount >= 3,
-            cornerPoints = cornerPoints,
-            detectedCount = detectedCount,
-            fallback = detectedCount < 4
+        Imgproc.findContours(
+            redMask, contours, Mat(),
+            Imgproc.RETR_EXTERNAL,
+            Imgproc.CHAIN_APPROX_SIMPLE
         )
+        redMask.release()
+
+        val candidates = mutableListOf<Triple<Point, Double, Double>>()
+        val totalArea = (src.cols() * src.rows()).toDouble()
+
+        for (i in 0 until contours.size()) {
+            val c = contours[i]
+            val area = Imgproc.contourArea(c)
+            if (area < totalArea * 0.0003) continue
+
+            val perim = Imgproc.arcLength(MatOfPoint2f(*c.toArray()), true)
+            if (perim <= 0) continue
+            val approx = MatOfPoint2f()
+            Imgproc.approxPolyDP(
+                MatOfPoint2f(*c.toArray()), approx,
+                0.04 * perim, true
+            )
+            val vertices = approx.toArray().size
+            approx.release()
+
+            val circularity = if (perim > 0) {
+                4 * Math.PI * area / (perim * perim)
+            } else 0.0
+            val score = if (vertices in 4..8) circularity * 1.3 else circularity
+
+            if (score > 0.45) {
+                val m = Imgproc.moments(c)
+                if (m.m00 > 0) {
+                    val cx = m.m10 / m.m00
+                    val cy = m.m01 / m.m00
+                    candidates.add(Triple(Point(cx, cy), score, area))
+                }
+            }
+            c.release()
+        }
+        contours.release()
+        src.release()
+
+        val anchor = defaultAnchors[boardType] ?: defaultAnchors["Board1200"]!!
+        val ordered = orderToCorners(candidates.map { it.first }, anchor)
+
+        val result = ordered.mapIndexed { index, pt ->
+            val name = when (index) {
+                0 -> "左上"
+                1 -> "右上"
+                2 -> "左下"
+                3 -> "右下"
+                else -> "角点${index + 1}"
+            }
+            DetectedCorner(name, pt.x, pt.y, "red")
+        }
+
+        return Result(
+            success = result.size == 4,
+            corners = result,
+            detectedCount = result.size,
+            fallback = result.size != 4
+        )
+    }
+
+    private val defaultAnchors = mapOf(
+        "Board1200" to listOf(
+            Point(0.10, 0.40), Point(0.85, 0.40),
+            Point(0.10, 0.62), Point(0.85, 0.62)
+        ),
+        "Board1008" to listOf(
+            Point(0.10, 0.40), Point(0.85, 0.40),
+            Point(0.10, 0.62), Point(0.85, 0.62)
+        ),
+        "Board4000" to listOf(
+            Point(0.03, 0.20), Point(0.97, 0.20),
+            Point(0.03, 0.75), Point(0.97, 0.75)
+        )
+    )
+
+    private fun orderToCorners(
+        points: List<Point>,
+        anchors: List<Point>
+    ): List<Point> {
+        if (points.isEmpty()) return anchors
+        val used = BooleanArray(points.size) { false }
+        return anchors.map { anchor ->
+            var best = -1
+            var bestDist = Double.MAX_VALUE
+            for (i in points.indices) {
+                if (used[i]) continue
+                val d = hypot(points[i].x - anchor.x, points[i].y - anchor.y)
+                if (d < bestDist) {
+                    bestDist = d
+                    best = i
+                }
+            }
+            used[best] = true
+            points[best]
+        }
+    }
+
+    fun snapCorner(
+        rawX: Float, rawY: Float,
+        w: Int, h: Int,
+        corners: List<DetectedCorner>,
+        boardType: String
+    ): Pair<Float, Float> {
+        val anchor = defaultAnchors[boardType] ?: defaultAnchors["Board1200"]!!
+        val pts = corners.map { Point(it.rx * w, it.ry * h) }
+
+        val cp = closestPointOnQuad(rawX, rawY, pts)
+        val dx = cp.first - rawX
+        val dy = cp.second - rawY
+        val dist = hypot(dx.toDouble(), dy.toDouble())
+        val maxSnap = hypot(w.toDouble(), h.toDouble()) * 0.12
+
+        val snapFrac = when {
+            dist < maxSnap * 0.35 -> SNAP_FRAC_STRONG
+            dist < maxSnap * 0.70 -> SNAP_FRAC_MID
+            dist < maxSnap -> SNAP_FRAC_WEAK
+            else -> 0.0
+        }
+
+        return Pair(
+            rawX + (dx * snapFrac).toFloat(),
+            rawY + (dy * snapFrac).toFloat()
+        )
+    }
+
+    private fun closestPointOnQuad(
+        x: Float, y: Float,
+        pts: List<Point>
+    ): Pair<Float, Float> {
+        if (pts.size < 4) return Pair(x, y)
+        val edges = listOf(0 to 1, 1 to 3, 3 to 2, 2 to 0)
+        var bestX = x.toDouble()
+        var bestY = y.toDouble()
+        var bestD = Double.MAX_VALUE
+
+        for ((a, b) in edges) {
+            val p0 = pts[a]
+            val p1 = pts[b]
+            val dx = p1.x - p0.x
+            val dy = p1.y - p0.y
+            val len2 = dx * dx + dy * dy
+            val t = if (len2 == 0.0) 0.0 else
+                ((x - p0.x) * dx + (y - p0.y) * dy) / len2
+            val clamped = t.coerceIn(0.0, 1.0)
+            val px = p0.x + clamped * dx
+            val py = p0.y + clamped * dy
+            val d = hypot(px - x, py - y)
+            if (d < bestD) {
+                bestD = d
+                bestX = px
+                bestY = py
+            }
+        }
+        return Pair(bestX.toFloat(), bestY.toFloat())
     }
 }
