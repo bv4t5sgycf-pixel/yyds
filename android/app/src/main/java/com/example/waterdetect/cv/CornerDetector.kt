@@ -2,6 +2,7 @@ package com.example.waterdetect.cv
 
 import org.opencv.core.*
 import org.opencv.imgproc.Imgproc
+import org.opencv.utils.MatVector
 import kotlin.math.*
 
 /**
