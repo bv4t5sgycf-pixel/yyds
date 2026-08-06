@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">水量分布识别</string>
+    <string name="hint_capture">拍照或选择设备照片</string>
+    <string name="hint_corner">拖动四角圆点修正；开启吸附后放大镜下实时扫描红点并锁定（绿圈）</string>
+    <string name="btn_detect">自动检测四角</string>
+    <string name="btn_analyze">开始分析水量</string>
+    <string name="btn_diag">查看诊断图</string>
+    <string name="snap_on">自动吸附</string>
+</resources>

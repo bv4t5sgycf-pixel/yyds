@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="blue_primary">#1a6fb5</color>
+    <color name="blue_dark">#155a93</color>
+    <color name="bg">#f2f5f8</color>
+    <color name="card">#ffffff</color>
+    <color name="text_main">#1f2d3d</color>
+    <color name="text_sub">#6b7c8f</color>
+    <color name="divider">#e3e9ef</color>
+    <color name="tl">#e74c3c</color>
+    <color name="tr">#2ecc71</color>
+    <color name="bl">#3498db</color>
+    <color name="br">#f39c12</color>
+</resources>
