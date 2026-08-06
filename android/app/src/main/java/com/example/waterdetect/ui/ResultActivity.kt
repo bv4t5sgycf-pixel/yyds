@@ -6,7 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.example.waterdetect.ImageHolder
 import com.example.waterdetect.R
-import com.example.waterdetect.cv.BoardPresets
+import com.example.waterdetect.model.BoardPresets
 import com.example.waterdetect.cv.OpenCvEngine
 import com.example.waterdetect.cv.WaterDetector
 import com.example.waterdetect.databinding.ActivityResultBinding
@@ -60,7 +60,7 @@ class ResultActivity : AppCompatActivity() {
 
     private fun updateText(res: WaterDetector.DetectResult) {
         binding.successText.text =
-            "识别成功率：${"%.1f".format(res.successRate * 100)}% · 有效管：${res.heights.count { it != null }}/$tubeCount"
+            "识别成功率：${"%.1f".format(res.successRate)}% · 有效管：${res.heights.count { it != null }}/$tubeCount"
         val sb = StringBuilder()
         res.heights.forEachIndexed { i, h ->
             sb.append("${i + 1}:${if (h == null) "—" else h.toInt()}  ")
