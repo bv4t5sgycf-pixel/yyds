@@ -80,8 +80,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun openCamera() {
         val file = File(cacheDir, "capture_${System.currentTimeMillis()}.jpg")
-        cameraUri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
-        cameraLauncher.launch(cameraUri)
+        val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+        cameraUri = uri
+        cameraLauncher.launch(uri)
     }
 
     private fun loadBitmap(uri: Uri) {
