@@ -21,6 +21,7 @@ import com.example.waterdetect.cv.CornerDetector
 import com.example.waterdetect.cv.OpenCvEngine
 import com.example.waterdetect.model.BoardPresets
 import com.example.waterdetect.databinding.ActivityMainBinding
+import com.example.waterdetect.ui.CaptureActivity
 import com.google.android.material.snackbar.Snackbar
 import java.io.File
 
