@@ -23,7 +23,7 @@ class CornerEditView @JvmOverloads constructor(
 
     private var bitmap: Bitmap? = null
     private var corners: MutableList<MutableCorner> = mutableListOf()
-    private var scaleView = 1.0   // view px per orig px (x/y share same ratio)
+    private var scaleView = 1.0
     private var dispH = 0
 
     private var snapEnabled = true
@@ -44,10 +44,9 @@ class CornerEditView @JvmOverloads constructor(
     private val amberPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFFC107.toInt(); style = Paint.Style.STROKE; strokeWidth = 3f * density }
     private val labelBg = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    // 触摸/放大镜状态
     private var draggingIdx = -1
     private var fingerView: PointF? = null
-    private var centerView: PointF? = null   // 吸附目标（view 坐标）
+    private var centerView: PointF? = null
     private var snapActive = false
     private var lastSnapNorm: Pair<Double, Double>? = null
     private var lastDownTime = 0L
@@ -83,7 +82,6 @@ class CornerEditView @JvmOverloads constructor(
         val bmp = bitmap ?: return
         canvas.drawBitmap(bmp, null, Rect(0, 0, width, dispH), paint)
 
-        // 四角圆点
         for (c in corners) {
             val cx = (c.rx * width).toFloat()
             val cy = (c.ry * dispH).toFloat()
@@ -96,7 +94,6 @@ class CornerEditView @JvmOverloads constructor(
             canvas.drawCircle(cx, cy, 5f * density, labelBg)
         }
 
-        // 放大镜
         if (draggingIdx >= 0 && fingerView != null && snapEnabled) {
             drawMagnifier(canvas)
         }
@@ -108,7 +105,6 @@ class CornerEditView @JvmOverloads constructor(
         canvas.save()
         val path = Path(); path.addCircle(fv.x, fv.y, magR, Path.Direction.CW)
         canvas.clipPath(path)
-        val scanRadiusOrig = (magR / magZoom) / scaleView
         val srcSize = (2 * magR / magZoom) / scaleView
         val ox = fv.x / scaleView; val oy = fv.y / scaleView
         val src = RectF(
@@ -125,7 +121,6 @@ class CornerEditView @JvmOverloads constructor(
         }
     }
 
-    /** 在 orig 坐标 (ox,oy) 周围 radiusPx 内扫描红点质心，返回 orig 坐标或 null。 */
     private fun scanRedCenter(ox: Float, oy: Float, radiusPx: Int): PointF? {
         val bmp = bitmap ?: return null
         val cx0 = max(0, (ox - radiusPx).toInt())
@@ -159,7 +154,6 @@ class CornerEditView @JvmOverloads constructor(
                 if (idx < 0) return false
                 val now = System.currentTimeMillis()
                 if (now - lastDownTime < 300 && idx == lastDownIdx) {
-                    // 双击回弹到自动检测位置
                     val c = corners[idx]; c.rx = c.snapRx; c.ry = c.snapRy
                     invalidate(); return true
                 }
