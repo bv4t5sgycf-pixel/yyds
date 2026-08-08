@@ -14,7 +14,6 @@ object WaterDetector {
 
     private const val WARP_PX_PER_MM = 4
     private const val WARP_HEADROOM_MM = 24
-    private const val BALL_DIAMETER_RATIO = 0.06
     private const val DEFAULT_SMOOTH_WINDOW = 3
 
     // boardType -> (board_w_mm, full_height_mm, tube_count)
@@ -55,7 +54,7 @@ object WaterDetector {
         Imgproc.cvtColor(merged, enhanced, Imgproc.COLOR_LAB2BGR)
         Imgproc.bilateralFilter(enhanced, enhanced, 5, 50.0, 50.0)
         lab.release(); listOf(l, a, b).forEach { it.release() }
-        l2.release(); merged.release(); clahe.release()
+        l2.release(); merged.release()
         return enhanced
     }
 
