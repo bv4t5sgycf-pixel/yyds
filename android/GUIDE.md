@@ -21,10 +21,23 @@
 ### 步骤 3：把 `android` 文件夹里的所有内容上传
 在新建好的仓库页面：
 - 点 **add a file → Upload files**
-- 把本地 `D:\微信小程序\水量分布视觉识别(DDY)\android\` 文件夹下的**所有文件和子文件夹**拖进去（注意：要把 `android` 里面的内容直接传，不要多套一层 `android` 文件夹）
+- 把本地 `D:\微信小程序\水量分布视觉识别(DDY)\android\` 文件夹下的**所有文件和子文件夹**拖进去
 - 拉到最下面，点 **Commit changes**
 
+**⚠️ 极易踩的坑：不要上传 `android` 这个文件夹本身！**
+
+正确结果：仓库根目录直接看到 `settings.gradle`、`build.gradle`、`app/`、`.github/` 这些。
+错误结果：仓库根目录多出一个 `android/` 文件夹，里面才是 `settings.gradle` 等文件。
+
 > 如果文件太多拖着麻烦，也可以装一个 GitHub Desktop（https://desktop.github.com ）用图形界面上传，但网页拖拽也能用。
+
+**已经传错了（根目录多了一个 `android/` 文件夹）怎么办？**
+最简单的修法是改 workflow 文件，让它进 `android/` 子目录再编译：
+1. 仓库里打开 `.github/workflows/build.yml`
+2. 点右上角编辑按钮（铅笔图标）
+3. 把全部内容替换成本指南末尾「附录：子目录版 build.yml」
+4. 点 **Commit changes**
+5. 重新等 Actions 跑（这次会走 `android/` 子目录）
 
 ### 步骤 4：等自动构建（约 2~5 分钟）
 1. 上传成功后，点仓库顶部的 **Actions** 标签页
@@ -95,3 +108,57 @@ android/
 - 当前出的是 **debug 包**（自动签名，可直接装、可长期使用），无需上架商店，适合车间自用。
 - 第一次打开 APP 时 OpenCV 引擎从安装包内加载（毫秒级），**全程不需要网络**。
 - 真机实测重点看：四角红点自动检测准不准、放大镜吸附绿圈是否锁对、分析结果读数是否合理；这些参数（红点阈值、圆度、平滑）拿到真实照片后可能要微调，告诉我实测情况即可。
+
+---
+
+## 附录：当前 build.yml（已支持自动检测根目录或 android/ 子目录）
+
+现在 workflow 会自动判断 `settings.gradle` 在根目录还是在 `android/` 子目录，所以无论上传时是「内容直接放根目录」还是「多套了一层 `android/` 文件夹」都能编译。如果你需要手动替换 `.github/workflows/build.yml`，用下面这段：
+
+```yaml
+name: Build Debug APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect project directory
+        run: |
+          if [ -f settings.gradle ]; then
+            echo "PROJECT_DIR=." >> $GITHUB_ENV
+          elif [ -f android/settings.gradle ]; then
+            echo "PROJECT_DIR=android" >> $GITHUB_ENV
+          else
+            echo "No settings.gradle found at root or android/"
+            exit 1
+          fi
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle (auto-provides gradle 8.9, no local wrapper needed)
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+
+      - name: Build debug APK
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle :app:assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk
+```
