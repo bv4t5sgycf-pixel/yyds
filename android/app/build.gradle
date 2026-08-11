@@ -44,6 +44,9 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    // OpenCV for Android (官方 Maven 包，原生 so 自动打进 APK)
-    implementation 'org.opencv:opencv:4.10.0'
+    // OpenCV for Android —— 使用 bytedeco 完整构建（Maven Central 上的
+    // org.opencv:opencv 是残缺包，缺 MatVector/Calib3d/部分 Imgproc 常量）。
+    // opencv-platform 含全部模块与 Android 各 ABI 原生 so，Loader 运行时自动提取。
+    implementation 'org.bytedeco:opencv:4.10.0'
+    implementation 'org.bytedeco:opencv-platform:4.10.0'
 }

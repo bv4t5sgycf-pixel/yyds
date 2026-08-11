@@ -111,10 +111,11 @@ class CornerEditView @JvmOverloads constructor(
         val scanRadiusOrig = (magR / magZoom) / scaleView
         val srcSize = (2 * magR / magZoom) / scaleView
         val ox = fv.x / scaleView; val oy = fv.y / scaleView
-        val src = RectF(
-            (ox - srcSize / 2).toFloat(), (oy - srcSize / 2).toFloat(),
-            (ox + srcSize / 2).toFloat(), (oy + srcSize / 2).toFloat()
-        )
+        val left = max(0, (ox - srcSize / 2).toInt())
+        val top = max(0, (oy - srcSize / 2).toInt())
+        val right = min(bmp.width, (ox + srcSize / 2).toInt())
+        val bottom = min(bmp.height, (oy + srcSize / 2).toInt())
+        val src = Rect(left, top, right, bottom)
         val dst = RectF(fv.x - magR, fv.y - magR, fv.x + magR, fv.y + magR)
         canvas.drawBitmap(bmp, src, dst, paint)
         canvas.restore()
@@ -170,9 +171,9 @@ class CornerEditView @JvmOverloads constructor(
             }
             MotionEvent.ACTION_MOVE -> {
                 if (draggingIdx < 0) return true
-                val ox = (event.x / scaleView).toFloat()
-                val oy = (event.y / scaleView).toFloat()
-                val fingerNorm = ox / bmp.width to oy / bmp.height
+                val ox = event.x / scaleView
+                val oy = event.y / scaleView
+                val fingerNorm = (ox / bmp.width).toDouble() to (oy / bmp.height).toDouble()
                 var target = fingerNorm
                 centerView = null; snapActive = false
                 if (snapEnabled) {
@@ -182,7 +183,7 @@ class CornerEditView @JvmOverloads constructor(
                         val d = hypot(center.x - ox, center.y - oy)
                         val snapR = scanR * (SNAP_FRAC[snapLevel] ?: 0.9f)
                         if (d < snapR) {
-                            target = center.x / bmp.width to center.y / bmp.height
+                            target = (center.x / bmp.width).toDouble() to (center.y / bmp.height).toDouble()
                             centerView = PointF((center.x * scaleView).toFloat(), (center.y * scaleView).toFloat())
                             snapActive = true
                             lastSnapNorm = target

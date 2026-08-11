@@ -10,8 +10,8 @@ import com.example.waterdetect.model.BoardPresets
 import com.example.waterdetect.cv.OpenCvEngine
 import com.example.waterdetect.cv.WaterDetector
 import com.example.waterdetect.databinding.ActivityResultBinding
-import org.opencv.core.Mat
-import org.opencv.core.Point
+import org.bytedeco.opencv.global.opencv_core.Mat
+import org.bytedeco.opencv.global.opencv_core.Point
 
 class ResultActivity : AppCompatActivity() {
 

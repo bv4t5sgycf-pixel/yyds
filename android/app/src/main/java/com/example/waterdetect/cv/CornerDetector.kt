@@ -1,8 +1,7 @@
 package com.example.waterdetect.cv
 
-import org.opencv.core.*
-import org.opencv.imgproc.Imgproc
-import org.opencv.utils.MatVector
+import org.bytedeco.opencv.global.opencv_core.*
+import org.bytedeco.opencv.global.opencv_imgproc.*
 import kotlin.math.*
 
 /**
@@ -113,7 +112,7 @@ object CornerDetector {
             val area = Imgproc.contourArea(cnt)
             if (area < minArea) continue
             val rect = Imgproc.boundingRect(cnt)
-            val bw = rect.width; val bh = rect.height
+            val bw = rect.width(); val bh = rect.height()
             if (bw < 1 || bh < 1) continue
             val aspect = max(bw, bh).toDouble() / (min(bw, bh) + 1e-6)
             if (aspect > 4.0) continue
@@ -121,9 +120,9 @@ object CornerDetector {
             val circ = if (peri > 0) (4 * Math.PI * area / (peri * peri + 1e-6)) else 0.0
             if (circ < 0.25) continue
             val mom = Imgproc.moments(cnt)
-            if (mom.m00 == 0.0) continue
-            val cx = mom.m10 / mom.m00
-            val cy = mom.m01 / mom.m00
+            if (mom.m00() == 0.0) continue
+            val cx = mom.m10() / mom.m00()
+            val cy = mom.m01() / mom.m00()
             val ox = cx / scale
             val oy = cy / scale
             cands.add(Cand(ox / origW, oy / origH, area))
@@ -136,7 +135,8 @@ object CornerDetector {
             defaults.none { d -> Math.abs(p.rx - d.rx) <= 1e-4 && Math.abs(p.ry - d.ry) <= 1e-4 }
         }
 
-        listOf(small, hsv, m1, m2, mask, kernel, opened, hier, contours).forEach { it.release() }
+        listOf(small, hsv, m1, m2, mask, kernel, opened, hier).forEach { it.release() }
+        contours.deallocate()
 
         return CornerDetectResult(
             success = detectedCount >= 3,

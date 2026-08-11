@@ -74,7 +74,7 @@ android/
 ├── build.gradle / settings.gradle / gradle.properties   # Gradle 工程配置
 ├── .github/workflows/build.yml                            # 自动出 APK（GitHub Actions）
 └── app/
-    ├── build.gradle                                      # 含 org.opencv:opencv:4.10.0 依赖
+    ├── build.gradle                                      # 含 bytedeco:opencv:4.10.0 + opencv-platform 依赖
     └── src/main/
         ├── AndroidManifest.xml
         ├── java/com/example/waterdetect/

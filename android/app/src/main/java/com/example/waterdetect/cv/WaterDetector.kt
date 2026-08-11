@@ -1,14 +1,14 @@
 package com.example.waterdetect.cv
 
-import org.opencv.calib3d.Calib3d
-import org.opencv.core.*
-import org.opencv.imgproc.Imgproc
-import org.opencv.utils.MatVector
+import org.bytedeco.opencv.global.opencv_core.*
+import org.bytedeco.opencv.global.opencv_imgproc.*
+import org.bytedeco.opencv.global.opencv_calib3d.Calib3d
 import kotlin.math.*
 
 /**
  * 水量分布检测核心（Kotlin 翻译自 PWA analyzer.js / 后端 detector.py）。
  * 全部在本地 OpenCV 原生库完成，无后端、可离线。
+ * 使用 bytedeco 完整 OpenCV 构建：Core.split/merge 走 MatVector，常量来自 global 包。
  */
 object WaterDetector {
 
@@ -42,78 +42,87 @@ object WaterDetector {
     // ── 预处理：CLAHE + 双边滤波 ──
     private fun preprocess(roi: Mat): Mat {
         val lab = Mat()
-        Imgproc.cvtColor(roi, lab, Imgproc.COLOR_BGR2LAB)
-        val ch = mutableListOf<Mat>()
+        Imgproc.cvtColor(roi, lab, COLOR_BGR2LAB)
+        val ch = MatVector()
         Core.split(lab, ch)
         val l = ch[0]; val a = ch[1]; val b = ch[2]
         val clahe = Imgproc.createCLAHE(2.5, Size(4.0, 4.0))
         val l2 = Mat()
         clahe.apply(l, l2)
+        val mergedVec = MatVector()
+        mergedVec.push_back(l2); mergedVec.push_back(a); mergedVec.push_back(b)
         val merged = Mat()
-        Core.merge(listOf(l2, a, b), merged)
+        Core.merge(mergedVec, merged)
         val enhanced = Mat()
-        Imgproc.cvtColor(merged, enhanced, Imgproc.COLOR_LAB2BGR)
+        Imgproc.cvtColor(merged, enhanced, COLOR_LAB2BGR)
         Imgproc.bilateralFilter(enhanced, enhanced, 5, 50.0, 50.0)
-        lab.release(); listOf(l, a, b).forEach { it.release() }
-        l2.release(); merged.release(); clahe.release()
+        lab.release()
+        l.release(); a.release(); b.release()
+        l2.release(); merged.release()
+        clahe.deallocate(); mergedVec.deallocate()
         return enhanced
     }
 
     // ── 绿色主导 + 高饱和 + 亮 掩膜（对应 greenBallMaskJS）──
     private fun greenBallMask(bgr: Mat, hsv: Mat): Mat {
-        val bgrCh = mutableListOf<Mat>(); Core.split(bgr, bgrCh)
+        val bgrCh = MatVector(); Core.split(bgr, bgrCh)
         val r = bgrCh[2]; val g = bgrCh[1]; val bCh = bgrCh[0]
-        val hsvCh = mutableListOf<Mat>(); Core.split(hsv, hsvCh)
+        val hsvCh = MatVector(); Core.split(hsv, hsvCh)
         val s = hsvCh[1]; val v = hsvCh[2]
         val rp = Mat(); Core.add(r, Scalar(10.0), rp)
         val bp = Mat(); Core.add(bCh, Scalar(10.0), bp)
-        val m1 = Mat(); Core.compare(g, rp, m1, Core.CMP_GT)
-        val m2 = Mat(); Core.compare(g, bp, m2, Core.CMP_GT)
-        val ms = Mat(); Core.compare(s, Scalar(85.0), ms, Core.CMP_GT)
-        val mv = Mat(); Core.compare(v, Scalar(110.0), mv, Core.CMP_GT)
+        val m1 = Mat(); Core.compare(g, rp, m1, CMP_GT)
+        val m2 = Mat(); Core.compare(g, bp, m2, CMP_GT)
+        val ms = Mat(); Core.compare(s, Scalar(85.0), ms, CMP_GT)
+        val mv = Mat(); Core.compare(v, Scalar(110.0), mv, CMP_GT)
         val t1 = Mat(); Core.bitwise_and(m1, m2, t1)
         val t2 = Mat(); Core.bitwise_and(t1, ms, t2)
         val out = Mat(); Core.bitwise_and(t2, mv, out)
         listOf(rp, bp, m1, m2, ms, mv, t1, t2).forEach { it.release() }
-        bgrCh.forEach { it.release() }; hsvCh.forEach { it.release() }
+        for (i in 0 until bgrCh.size().toInt()) bgrCh[i].release()
+        bgrCh.deallocate()
+        for (i in 0 until hsvCh.size().toInt()) hsvCh[i].release()
+        hsvCh.deallocate()
         return out
     }
 
     private fun brightSatMask(bgr: Mat, hsv: Mat): Mat {
-        val hsvCh = mutableListOf<Mat>(); Core.split(hsv, hsvCh)
+        val hsvCh = MatVector(); Core.split(hsv, hsvCh)
         val s = hsvCh[1]; val v = hsvCh[2]
-        val ms1 = Mat(); Core.compare(s, Scalar(90.0), ms1, Core.CMP_GT)
-        val mv1 = Mat(); Core.compare(v, Scalar(120.0), mv1, Core.CMP_GT)
-        val mv2 = Mat(); Core.compare(v, Scalar(250.0), mv2, Core.CMP_LT)
+        val ms1 = Mat(); Core.compare(s, Scalar(90.0), ms1, CMP_GT)
+        val mv1 = Mat(); Core.compare(v, Scalar(120.0), mv1, CMP_GT)
+        val mv2 = Mat(); Core.compare(v, Scalar(250.0), mv2, CMP_LT)
         val t1 = Mat(); Core.bitwise_and(ms1, mv1, t1)
         val out = Mat(); Core.bitwise_and(t1, mv2, out)
         listOf(ms1, mv1, mv2, t1).forEach { it.release() }
-        hsvCh.forEach { it.release() }
+        for (i in 0 until hsvCh.size().toInt()) hsvCh[i].release()
+        hsvCh.deallocate()
         return out
     }
 
     private fun candidatesFrom(mask: Mat): List<Cand> {
-        val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, Size(3.0, 3.0))
+        val kernel = Imgproc.getStructuringElement(MORPH_ELLIPSE, Size(3.0, 3.0))
         val opened = Mat()
-        Imgproc.morphologyEx(mask, opened, Imgproc.MORPH_OPEN, kernel)
+        Imgproc.morphologyEx(mask, opened, MORPH_OPEN, kernel)
         val contours = MatVector()
         val hierarchy = Mat()
-        Imgproc.findContours(opened, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE)
+        Imgproc.findContours(opened, contours, hierarchy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE)
         val out = mutableListOf<Cand>()
         val h = mask.rows().toDouble()
-        for (k in 0 until contours.size()) {
+        val n = contours.size().toInt()
+        for (k in 0 until n) {
             val cnt = contours[k]
             val area = Imgproc.contourArea(cnt)
             if (area < 4) continue
             val mom = Imgproc.moments(cnt)
-            if (mom.m00 == 0.0) continue
-            val cy = mom.m01 / mom.m00
+            if (mom.m00() == 0.0) continue
+            val cy = mom.m01() / mom.m00()
             if (cy < max(6.0, h * 0.03) || cy > h * 0.99) continue
             val peri = Imgproc.arcLength(cnt, true)
             val circ = if (peri > 0) (4 * Math.PI * area / (peri * peri + 1e-6)) else 0.0
             out.add(Cand(cy, area, circ))
         }
-        kernel.release(); opened.release(); hierarchy.release(); contours.release()
+        kernel.release(); opened.release(); hierarchy.release(); contours.deallocate()
         return out
     }
 
@@ -121,7 +130,7 @@ object WaterDetector {
         val h = roiCol.rows(); val w = roiCol.cols()
         if (h < 20 || w < 3) return null to 0.0
         val hsv = Mat()
-        Imgproc.cvtColor(roiCol, hsv, Imgproc.COLOR_BGR2HSV)
+        Imgproc.cvtColor(roiCol, hsv, COLOR_BGR2HSV)
         var cands = candidatesFrom(greenBallMask(roiCol, hsv))
         if (cands.isEmpty()) cands = candidatesFrom(brightSatMask(roiCol, hsv))
         hsv.release()
@@ -258,8 +267,8 @@ object WaterDetector {
 
     // ── 透视校正 ──
     private fun orderPoints(pts: List<Point>): List<Point> {
-        val s = pts.map { it.x + it.y }
-        val diff = pts.map { it.x - it.y }
+        val s = pts.map { it.x() + it.y() }
+        val diff = pts.map { it.x() - it.y() }
         val tl = pts[s.indexOf(s.minOrNull()!!)]
         val br = pts[s.indexOf(s.maxOrNull()!!)]
         val tr = pts[diff.indexOf(diff.minOrNull()!!)]
@@ -283,7 +292,7 @@ object WaterDetector {
         val warped = Mat()
         Imgproc.warpPerspective(
             image, warped, m,
-            Size(outW.toDouble(), outH.toDouble()), Imgproc.INTER_LINEAR
+            Size(outW.toDouble(), outH.toDouble()), INTER_LINEAR
         )
         srcMat.release(); dstMat.release(); m.release()
         return warped
@@ -294,7 +303,7 @@ object WaterDetector {
         val dispW = calib.first
         val dispH = calib.second + WARP_HEADROOM_MM
         val dst = Mat()
-        Imgproc.resize(warpedHi, dst, Size(dispW.toDouble(), dispH.toDouble()), 0.0, 0.0, Imgproc.INTER_AREA)
+        Imgproc.resize(warpedHi, dst, Size(dispW.toDouble(), dispH.toDouble()), 0.0, 0.0, INTER_AREA)
         return dst
     }
 
@@ -327,7 +336,7 @@ object WaterDetector {
             }
         }
 
-        val font = Imgproc.FONT_HERSHEY_SIMPLEX
+        val font = FONT_HERSHEY_SIMPLEX
         for (t in 0..tubeCount step 10) {
             val lx = round((t + 0.5) * colWidth).toInt()
             val label = if (t < tubeCount) (t + 1).toString() else tubeCount.toString()
