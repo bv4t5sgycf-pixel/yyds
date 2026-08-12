@@ -150,7 +150,7 @@ object WaterDetector {
         if (cands.isEmpty()) cands = candidatesFrom(brightSatMask(roiCol, hsv))
         hsv.release()
         if (cands.isEmpty()) return null to 0.0
-        cands.sortWith(compareByDescending<Cand> { it.area }.thenBy { it.cy })
+        cands = cands.sortedWith(compareByDescending<Cand> { it.area }.thenBy { it.cy })
         val best = cands[0]
         val areaScore = min(1.0, best.area / 40.0)
         val conf = min(1.0, 0.4 + best.circ * 0.35 + areaScore * 0.25)
