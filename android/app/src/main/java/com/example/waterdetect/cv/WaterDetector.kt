@@ -78,13 +78,13 @@ object WaterDetector {
         val hsvCh = MatVector(); opencv_core.split(hsv, hsvCh)
         val s = hsvCh.get(1L); val v = hsvCh.get(2L)
         // r+10 / b+10（饱和加法），bytedeco add(Mat,Scalar) 返回 MatExpr，用 asMat() 落地
-        val rp = opencv_core.add(r, Scalar(10.0)).asMat()
-        val bp = opencv_core.add(bCh, Scalar(10.0)).asMat()
+        val rp = opencv_core.add(r, Scalar(5.0)).asMat()
+        val bp = opencv_core.add(bCh, Scalar(5.0)).asMat()
         val m1 = Mat(); opencv_core.compare(g, rp, m1, opencv_core.CMP_GT)
         val m2 = Mat(); opencv_core.compare(g, bp, m2, opencv_core.CMP_GT)
         // 单通道阈值（bytedeco compare 的第二参数必须是 Mat，用 1x1 CV_8UC1 承载标量）
-        val sThresh = Mat(Size(1, 1), opencv_core.CV_8UC(1), Scalar(85.0))
-        val vThresh = Mat(Size(1, 1), opencv_core.CV_8UC(1), Scalar(110.0))
+        val sThresh = Mat(Size(1, 1), opencv_core.CV_8UC(1), Scalar(55.0))
+        val vThresh = Mat(Size(1, 1), opencv_core.CV_8UC(1), Scalar(75.0))
         val ms = Mat(); opencv_core.compare(s, sThresh, ms, opencv_core.CMP_GT)
         val mv = Mat(); opencv_core.compare(v, vThresh, mv, opencv_core.CMP_GT)
         val t1 = Mat(); opencv_core.bitwise_and(m1, m2, t1)
@@ -102,9 +102,9 @@ object WaterDetector {
     private fun brightSatMask(bgr: Mat, hsv: Mat): Mat {
         val hsvCh = MatVector(); opencv_core.split(hsv, hsvCh)
         val s = hsvCh.get(1L); val v = hsvCh.get(2L)
-        val sLo = Mat(Size(1, 1), opencv_core.CV_8UC(1), Scalar(90.0))
-        val vLo = Mat(Size(1, 1), opencv_core.CV_8UC(1), Scalar(120.0))
-        val vHi = Mat(Size(1, 1), opencv_core.CV_8UC(1), Scalar(250.0))
+        val sLo = Mat(Size(1, 1), opencv_core.CV_8UC(1), Scalar(55.0))
+        val vLo = Mat(Size(1, 1), opencv_core.CV_8UC(1), Scalar(75.0))
+        val vHi = Mat(Size(1, 1), opencv_core.CV_8UC(1), Scalar(255.0))
         val ms1 = Mat(); opencv_core.compare(s, sLo, ms1, opencv_core.CMP_GT)
         val mv1 = Mat(); opencv_core.compare(v, vLo, mv1, opencv_core.CMP_GT)
         val mv2 = Mat(); opencv_core.compare(v, vHi, mv2, opencv_core.CMP_LT)
@@ -130,7 +130,7 @@ object WaterDetector {
         for (k in 0 until n) {
             val cnt = contours.get(k.toLong())
             val area = opencv_imgproc.contourArea(cnt)
-            if (area < 4) continue
+            if (area < 2) continue
             val mom = opencv_imgproc.moments(cnt)
             if (mom.m00() == 0.0) continue
             val cy = mom.m01() / mom.m00()
@@ -372,5 +372,26 @@ object WaterDetector {
     fun recompute(prev: DetectResult, smoothWindow: Int, boardType: String): DetectResult {
         val validCount = prev.rawCys.count { it != null }
         return finalize(prev.rawCys, prev.confidences, prev.points, validCount, prev.tubeCount, 0.0, boardType, smoothWindow)
+    }
+
+    /** 诊断掩膜：把 greenBallMask + brightSatMask 以绿色半透明叠在预处理图上，帮助定位水球漏检。 */
+    fun debugMaskOverlay(warpedHi: Mat): Mat {
+        val proc = preprocess(warpedHi)
+        val hsv = Mat()
+        opencv_imgproc.cvtColor(proc, hsv, opencv_imgproc.COLOR_BGR2HSV)
+        val mask1 = greenBallMask(proc, hsv)
+        val mask2 = brightSatMask(proc, hsv)
+        val mask = Mat()
+        opencv_core.bitwise_or(mask1, mask2, mask)
+        val maskBgr = Mat()
+        opencv_imgproc.cvtColor(mask, maskBgr, opencv_imgproc.COLOR_GRAY2BGR)
+        // 把掩膜区域染成绿色（保留原图 60%）
+        val greenMask = Mat(maskBgr.size(), maskBgr.type(), Scalar(0.0, 255.0, 0.0, 0.0))
+        val tinted = Mat()
+        opencv_core.bitwise_and(greenMask, maskBgr, tinted)
+        val overlay = Mat()
+        opencv_core.addWeighted(proc, 0.65, tinted, 0.55, 0.0, overlay)
+        hsv.release(); mask1.release(); mask2.release(); mask.release(); maskBgr.release(); greenMask.release(); tinted.release(); proc.release()
+        return overlay
     }
 }

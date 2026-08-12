@@ -19,22 +19,22 @@ object CornerDetector {
 
     private val DEFAULT_CORNERS: Map<String, List<DefaultCorner>> = mapOf(
         "Board1008" to listOf(
-            DefaultCorner("TL", "#e74c3c", 0.14, 0.16),
-            DefaultCorner("TR", "#2ecc71", 0.86, 0.16),
-            DefaultCorner("BL", "#3498db", 0.14, 0.84),
-            DefaultCorner("BR", "#f39c12", 0.86, 0.84)
+            DefaultCorner("TL", "#e74c3c", 0.12, 0.12),
+            DefaultCorner("TR", "#2ecc71", 0.88, 0.12),
+            DefaultCorner("BL", "#3498db", 0.12, 0.88),
+            DefaultCorner("BR", "#f39c12", 0.88, 0.88)
         ),
         "Board1200" to listOf(
-            DefaultCorner("TL", "#e74c3c", 0.14, 0.16),
-            DefaultCorner("TR", "#2ecc71", 0.86, 0.16),
-            DefaultCorner("BL", "#3498db", 0.14, 0.84),
-            DefaultCorner("BR", "#f39c12", 0.86, 0.84)
+            DefaultCorner("TL", "#e74c3c", 0.12, 0.12),
+            DefaultCorner("TR", "#2ecc71", 0.88, 0.12),
+            DefaultCorner("BL", "#3498db", 0.12, 0.88),
+            DefaultCorner("BR", "#f39c12", 0.88, 0.88)
         ),
         "Board4000" to listOf(
-            DefaultCorner("TL", "#e74c3c", 0.14, 0.16),
-            DefaultCorner("TR", "#2ecc71", 0.86, 0.16),
-            DefaultCorner("BL", "#3498db", 0.14, 0.84),
-            DefaultCorner("BR", "#f39c12", 0.86, 0.84)
+            DefaultCorner("TL", "#e74c3c", 0.12, 0.12),
+            DefaultCorner("TR", "#2ecc71", 0.88, 0.12),
+            DefaultCorner("BL", "#3498db", 0.12, 0.88),
+            DefaultCorner("BR", "#f39c12", 0.88, 0.88)
         )
     )
 
@@ -68,7 +68,7 @@ object CornerDetector {
                 val dist = Math.hypot(cands[c].nx - d.rx, cands[c].ny - d.ry)
                 if (dist < bestD) { bestD = dist; best = c }
             }
-            if (best != -1 && bestD < 0.32) {
+            if (best != -1 && bestD < 0.45) {
                 val cc = cands[best]
                 used.add(best)
                 val nx = round4(cc.nx); val ny = round4(cc.ny)
@@ -98,9 +98,9 @@ object CornerDetector {
 
         // bytedeco inRange 的上下界必须是 Mat（用 1x1 CV_8UC3 承载 HSV 标量阈值）
         val m1 = Mat(); val m2 = Mat(); val mask = Mat()
-        val lo1 = Mat(Size(1, 1), opencv_core.CV_8UC(3), Scalar(0.0, 45.0, 40.0, 0.0))
-        val hi1 = Mat(Size(1, 1), opencv_core.CV_8UC(3), Scalar(18.0, 255.0, 255.0, 0.0))
-        val lo2 = Mat(Size(1, 1), opencv_core.CV_8UC(3), Scalar(152.0, 40.0, 40.0, 0.0))
+        val lo1 = Mat(Size(1, 1), opencv_core.CV_8UC(3), Scalar(0.0, 30.0, 25.0, 0.0))
+        val hi1 = Mat(Size(1, 1), opencv_core.CV_8UC(3), Scalar(20.0, 255.0, 255.0, 0.0))
+        val lo2 = Mat(Size(1, 1), opencv_core.CV_8UC(3), Scalar(150.0, 30.0, 25.0, 0.0))
         val hi2 = Mat(Size(1, 1), opencv_core.CV_8UC(3), Scalar(180.0, 255.0, 255.0, 0.0))
         opencv_core.inRange(hsv, lo1, hi1, m1)
         opencv_core.inRange(hsv, lo2, hi2, m2)
@@ -114,7 +114,7 @@ object CornerDetector {
         val hier = Mat()
         opencv_imgproc.findContours(opened, contours, hier, opencv_imgproc.RETR_EXTERNAL, opencv_imgproc.CHAIN_APPROX_SIMPLE)
 
-        val minArea = small.cols() * small.rows() * 0.00008
+        val minArea = small.cols() * small.rows() * 0.00005
         val cands = mutableListOf<Cand>()
         for (k in 0 until contours.size().toInt()) {
             val cnt = contours.get(k.toLong())
@@ -127,7 +127,7 @@ object CornerDetector {
             if (aspect > 4.0) continue
             val peri = opencv_imgproc.arcLength(cnt, true)
             val circ = if (peri > 0) (4 * Math.PI * area / (peri * peri + 1e-6)) else 0.0
-            if (circ < 0.25) continue
+            if (circ < 0.15) continue
             val mom = opencv_imgproc.moments(cnt)
             if (mom.m00() == 0.0) continue
             val cx = mom.m10() / mom.m00()

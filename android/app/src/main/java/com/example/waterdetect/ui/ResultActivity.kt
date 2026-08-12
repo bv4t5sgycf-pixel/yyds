@@ -19,9 +19,10 @@ class ResultActivity : AppCompatActivity() {
     private var warpMat: Mat? = null
     private var boardType = "Board1200"
     private var tubeCount = 100
-    private var showDiag = false
+    private var showDiag = 0   // 0=原透视图, 1=结果网格图, 2=掩膜诊断图
     private var lastDrawMat: Mat? = null
     private var cacheResult: WaterDetector.DetectResult? = null
+    private val diagLabels = listOf("查看诊断图", "查看原图", "查看掩膜")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,7 +48,8 @@ class ResultActivity : AppCompatActivity() {
             setupSmoothButtons()
 
             binding.btnDiag.setOnClickListener {
-                showDiag = !showDiag
+                showDiag = (showDiag + 1) % 3
+                binding.btnDiag.text = diagLabels[showDiag]
                 redraw()
             }
         } catch (e: Exception) {
@@ -83,9 +85,14 @@ class ResultActivity : AppCompatActivity() {
     }
 
     private fun redraw() {
-        val res = cacheResult ?: return
-        val draw = if (showDiag) WaterDetector.drawResult(warpMat!!, res, boardType)
-        else WaterDetector.toDisplayImage(warpMat!!, boardType)
+        val draw = when (showDiag) {
+            1 -> {
+                val res = cacheResult ?: return
+                WaterDetector.drawResult(warpMat!!, res, boardType)
+            }
+            2 -> WaterDetector.debugMaskOverlay(warpMat!!)
+            else -> WaterDetector.toDisplayImage(warpMat!!, boardType)
+        }
         lastDrawMat?.release()
         lastDrawMat = draw
         binding.resultImage.setImageBitmap(OpenCvEngine.matToBitmap(draw))

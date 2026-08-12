@@ -105,10 +105,19 @@ class CornerEditView @JvmOverloads constructor(
     private fun drawMagnifier(canvas: Canvas) {
         val fv = fingerView ?: return
         val bmp = bitmap ?: return
+        // 放大镜圆心偏移到手指上方，避免被手指遮挡；做边界约束
+        val offsetY = magR + 24f * density
+        var magCx = fv.x
+        var magCy = fv.y - offsetY
+        if (magCy - magR < 0) magCy = fv.y + offsetY          // 上方不够就放到手指下方
+        if (magCx - magR < 0) magCx = magR
+        if (magCx + magR > width) magCx = width - magR
+        if (magCy + magR > dispH) magCy = dispH - magR
+        val magCenter = PointF(magCx, magCy)
+
         canvas.save()
-        val path = Path(); path.addCircle(fv.x, fv.y, magR, Path.Direction.CW)
+        val path = Path(); path.addCircle(magCenter.x, magCenter.y, magR, Path.Direction.CW)
         canvas.clipPath(path)
-        val scanRadiusOrig = (magR / magZoom) / scaleView
         val srcSize = (2 * magR / magZoom) / scaleView
         val ox = fv.x / scaleView; val oy = fv.y / scaleView
         val left = max(0, (ox - srcSize / 2).toInt())
@@ -116,13 +125,16 @@ class CornerEditView @JvmOverloads constructor(
         val right = min(bmp.width, (ox + srcSize / 2).toInt())
         val bottom = min(bmp.height, (oy + srcSize / 2).toInt())
         val src = Rect(left, top, right, bottom)
-        val dst = RectF(fv.x - magR, fv.y - magR, fv.x + magR, fv.y + magR)
+        val dst = RectF(magCenter.x - magR, magCenter.y - magR, magCenter.x + magR, magCenter.y + magR)
         canvas.drawBitmap(bmp, src, dst, paint)
         canvas.restore()
-        canvas.drawCircle(fv.x, fv.y, magR, borderPaint)
+        canvas.drawCircle(magCenter.x, magCenter.y, magR, borderPaint)
 
+        // 把吸附目标点从手指坐标映射到放大镜坐标系（相对圆心的偏移）
         centerView?.let { cv ->
-            canvas.drawCircle(cv.x, cv.y, 10f * density, if (snapActive) greenPaint else amberPaint)
+            val dx = cv.x - fv.x
+            val dy = cv.y - fv.y
+            canvas.drawCircle(magCenter.x + dx, magCenter.y + dy, 10f * density, if (snapActive) greenPaint else amberPaint)
         }
     }
 
