@@ -61,12 +61,14 @@ object WaterDetector {
         opencv_core.merge(mergedVec, merged)
         val enhanced = Mat()
         opencv_imgproc.cvtColor(merged, enhanced, opencv_imgproc.COLOR_Lab2BGR)
-        opencv_imgproc.bilateralFilter(enhanced, enhanced, 5, 50.0, 50.0)
+        // bilateralFilter 不支持 in-place（src 与 dst 不能是同一个 Mat）
+        val filtered = Mat()
+        opencv_imgproc.bilateralFilter(enhanced, filtered, 5, 50.0, 50.0)
         lab.release()
         l.release(); a.release(); b.release()
-        l2.release(); merged.release()
+        l2.release(); merged.release(); enhanced.release()
         clahe.deallocate(); mergedVec.deallocate()
-        return enhanced
+        return filtered
     }
 
     // ── 绿色主导 + 高饱和 + 亮 掩膜（对应 greenBallMaskJS）──

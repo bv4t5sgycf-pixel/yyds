@@ -65,7 +65,9 @@ class ResultActivity : AppCompatActivity() {
             redraw()
         } catch (e: Exception) {
             android.util.Log.e("ResultActivity", "水球检测失败", e)
-            android.widget.Toast.makeText(this, "水球检测失败：${e.message}", android.widget.Toast.LENGTH_LONG).show()
+            val detail = e.message + "\n" + e.stackTraceToString()
+            binding.successText.text = "水球检测失败（请截图给我）：\n$detail"
+            android.widget.Toast.makeText(this, "水球检测失败，详细错误已显示在页面", android.widget.Toast.LENGTH_LONG).show()
         }
     }
 
