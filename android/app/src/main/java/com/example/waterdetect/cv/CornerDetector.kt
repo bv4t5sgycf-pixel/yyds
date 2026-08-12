@@ -88,7 +88,7 @@ object CornerDetector {
         val scale = min(1.0, maxSide / max(mat.cols(), mat.rows()))
         val small = Mat()
         if (scale < 1.0) {
-            opencv_imgproc.resize(mat, small, Size(Math.round(mat.cols() * scale).toDouble(), Math.round(mat.rows() * scale).toDouble()), 0.0, 0.0, opencv_imgproc.INTER_AREA)
+            opencv_imgproc.resize(mat, small, Size(Math.round(mat.cols() * scale).toInt(), Math.round(mat.rows() * scale).toInt()), 0.0, 0.0, opencv_imgproc.INTER_AREA)
         } else {
             mat.copyTo(small)
         }
@@ -96,12 +96,17 @@ object CornerDetector {
         val hsv = Mat()
         opencv_imgproc.cvtColor(small, hsv, opencv_imgproc.COLOR_BGR2HSV)
 
+        // bytedeco inRange 的上下界必须是 Mat（用 1x1 CV_8UC3 承载 HSV 标量阈值）
         val m1 = Mat(); val m2 = Mat(); val mask = Mat()
-        opencv_core.inRange(hsv, Scalar(0.0, 45.0, 40.0), Scalar(18.0, 255.0, 255.0), m1)
-        opencv_core.inRange(hsv, Scalar(152.0, 40.0, 40.0), Scalar(180.0, 255.0, 255.0), m2)
+        val lo1 = Mat(Size(1, 1), opencv_core.CV_8UC(3), Scalar(0.0, 45.0, 40.0, 0.0))
+        val hi1 = Mat(Size(1, 1), opencv_core.CV_8UC(3), Scalar(18.0, 255.0, 255.0, 0.0))
+        val lo2 = Mat(Size(1, 1), opencv_core.CV_8UC(3), Scalar(152.0, 40.0, 40.0, 0.0))
+        val hi2 = Mat(Size(1, 1), opencv_core.CV_8UC(3), Scalar(180.0, 255.0, 255.0, 0.0))
+        opencv_core.inRange(hsv, lo1, hi1, m1)
+        opencv_core.inRange(hsv, lo2, hi2, m2)
         opencv_core.bitwise_or(m1, m2, mask)
 
-        val kernel = opencv_imgproc.getStructuringElement(opencv_imgproc.MORPH_ELLIPSE, Size(3.0, 3.0))
+        val kernel = opencv_imgproc.getStructuringElement(opencv_imgproc.MORPH_ELLIPSE, Size(3, 3))
         val opened = Mat()
         opencv_imgproc.morphologyEx(mask, opened, opencv_imgproc.MORPH_OPEN, kernel)
 
@@ -139,7 +144,7 @@ object CornerDetector {
             defaults.none { d -> Math.abs(p.rx - d.rx) <= 1e-4 && Math.abs(p.ry - d.ry) <= 1e-4 }
         }
 
-        listOf(small, hsv, m1, m2, mask, kernel, opened, hier).forEach { it.release() }
+        listOf(small, hsv, m1, m2, mask, kernel, opened, hier, lo1, hi1, lo2, hi2).forEach { it.release() }
         contours.deallocate()
 
         return CornerDetectResult(

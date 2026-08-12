@@ -2,6 +2,7 @@ package com.example.waterdetect.cv
 
 import android.graphics.Bitmap
 import android.util.Log
+import org.bytedeco.javacpp.BytePointer
 import org.bytedeco.javacpp.Loader
 import org.bytedeco.opencv.opencv_core.Mat
 import org.bytedeco.opencv.global.opencv_core
@@ -16,8 +17,7 @@ import org.bytedeco.opencv.global.opencv_imgproc
  */
 object OpenCvEngine {
 
-    @Volatile
-    private var initialized = false
+    @Volatile private var initialized = false
 
     fun ensureInitialized(): Boolean {
         if (initialized) return true
@@ -37,35 +37,38 @@ object OpenCvEngine {
 
     fun isInitialized(): Boolean = initialized
 
+    /** Bitmap(ARGB) -> BGR Mat */
     fun bitmapToMat(bmp: Bitmap): Mat {
         val w = bmp.width
         val h = bmp.height
         val pixels = IntArray(w * h)
         bmp.getPixels(pixels, 0, w, 0, 0, w, h)
-        val rgba = Mat(h, w, opencv_core.CV_8UC4)
+        // ARGB int -> BGRA bytes (OpenCV cvtColor BGRA2BGR expects B,G,R,A order).
         val buf = ByteArray(w * h * 4)
         for (i in pixels.indices) {
             val p = pixels[i]
             val o = i * 4
-            buf[o] = (p and 0xFF).toByte()
-            buf[o + 1] = ((p shr 8) and 0xFF).toByte()
-            buf[o + 2] = ((p shr 16) and 0xFF).toByte()
-            buf[o + 3] = ((p shr 24) and 0xFF).toByte()
+            buf[o] = (p and 0xFF).toByte()          // B
+            buf[o + 1] = ((p shr 8) and 0xFF).toByte()   // G
+            buf[o + 2] = ((p shr 16) and 0xFF).toByte()  // R
+            buf[o + 3] = ((p shr 24) and 0xFF).toByte()  // A
         }
-        rgba.put(0, 0, buf)
+        val rgba = Mat(h, w, opencv_core.CV_8UC4)
+        BytePointer(rgba.data()).put(buf)
         val bgr = Mat()
         opencv_imgproc.cvtColor(rgba, bgr, opencv_imgproc.COLOR_BGRA2BGR)
         rgba.release()
         return bgr
     }
 
+    /** BGR Mat -> Bitmap(ARGB) */
     fun matToBitmap(mat: Mat): Bitmap {
         val w = mat.cols()
         val h = mat.rows()
         val rgba = Mat()
         opencv_imgproc.cvtColor(mat, rgba, opencv_imgproc.COLOR_BGR2BGRA)
         val buf = ByteArray(w * h * 4)
-        rgba.put(0, 0, buf)
+        BytePointer(rgba.data()).get(buf)
         val pixels = IntArray(w * h)
         for (i in pixels.indices) {
             val o = i * 4
