@@ -14,9 +14,10 @@ android {
         versionCode 1
         versionName "1.0"
         vectorDrawables.useSupportLibrary true
-        // 真机只需 arm64-v8a（现代）与 armeabi-v7a（旧 32 位），剔除 x86/x86_64 模拟器 ABI，显著缩小 APK
+        // 仅保留 arm64-v8a（现代手机几乎全为 64 位；剔除 armeabi-v7a 旧 32 位与 x86/x86_64 模拟器 ABI，
+        // 显著缩小 APK。若真机为极老旧 32 位设备，再把 armeabi-v7a 加回即可。
         ndk {
-            abiFilters 'arm64-v8a', 'armeabi-v7a'
+            abiFilters 'arm64-v8a'
         }
     }
 
