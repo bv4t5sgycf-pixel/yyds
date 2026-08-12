@@ -53,8 +53,9 @@ object OpenCvEngine {
             buf[o + 2] = ((p shr 16) and 0xFF).toByte()  // R
             buf[o + 3] = ((p shr 24) and 0xFF).toByte()  // A
         }
-        // bytedeco: Mat(int,int,int,Pointer) 直接包装 Java 字节数组（零拷贝，cvtColor 读取之）
-        val rgba = Mat(h, w, opencv_core.CV_8UC4, BytePointer(buf))
+        val rgba = Mat(h, w, opencv_core.CV_8UC4)
+        // bytedeco: put(*buf) 用 varargs 写入 Mat 自有缓冲区（与 matToBitmap 的 get(buf) 对称）
+        BytePointer(rgba.data()).put(*buf)
         val bgr = Mat()
         opencv_imgproc.cvtColor(rgba, bgr, opencv_imgproc.COLOR_BGRA2BGR)
         rgba.release()
