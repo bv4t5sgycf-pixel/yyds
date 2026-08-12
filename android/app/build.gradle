@@ -47,6 +47,11 @@ android {
         resources {
             excludes += ["META-INF/native-image/**"]
         }
+        // bytedeco 的 .so 从 jar 提取，ndk.abiFilters 不生效；显式剔除 x86/x86_64 模拟器 ABI，
+        // 仅保留真机需要的 arm64-v8a + armeabi-v7a，显著缩小 APK。
+        jniLibs {
+            excludes += ["lib/x86/**", "lib/x86_64/**"]
+        }
     }
 }
 
