@@ -2,6 +2,12 @@ package com.example.waterdetect.cv
 
 import org.bytedeco.opencv.global.opencv_core.*
 import org.bytedeco.opencv.global.opencv_imgproc.*
+import org.bytedeco.opencv.opencv_core.Mat
+import org.bytedeco.opencv.opencv_core.MatVector
+import org.bytedeco.opencv.opencv_core.Scalar
+import org.bytedeco.opencv.opencv_core.Size
+import org.bytedeco.opencv.opencv_core.Moments
+import org.bytedeco.opencv.opencv_core.Rect
 import kotlin.math.*
 
 /**
@@ -107,8 +113,8 @@ object CornerDetector {
 
         val minArea = small.cols() * small.rows() * 0.00008
         val cands = mutableListOf<Cand>()
-        for (k in 0 until contours.size()) {
-            val cnt = contours[k]
+        for (k in 0 until contours.size().toInt()) {
+            val cnt = contours.get(k.toLong())
             val area = Imgproc.contourArea(cnt)
             if (area < minArea) continue
             val rect = Imgproc.boundingRect(cnt)

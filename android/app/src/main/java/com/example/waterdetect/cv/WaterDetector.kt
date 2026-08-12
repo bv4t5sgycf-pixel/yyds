@@ -3,6 +3,13 @@ package com.example.waterdetect.cv
 import org.bytedeco.opencv.global.opencv_core.*
 import org.bytedeco.opencv.global.opencv_imgproc.*
 import org.bytedeco.opencv.global.opencv_calib3d.Calib3d
+import org.bytedeco.opencv.opencv_core.Mat
+import org.bytedeco.opencv.opencv_core.MatVector
+import org.bytedeco.opencv.opencv_core.Scalar
+import org.bytedeco.opencv.opencv_core.Size
+import org.bytedeco.opencv.opencv_core.Point
+import org.bytedeco.opencv.opencv_core.Point2f
+import org.bytedeco.opencv.opencv_core.Point2fVector
 import kotlin.math.*
 
 /**
@@ -45,7 +52,7 @@ object WaterDetector {
         Imgproc.cvtColor(roi, lab, COLOR_BGR2LAB)
         val ch = MatVector()
         Core.split(lab, ch)
-        val l = ch[0]; val a = ch[1]; val b = ch[2]
+        val l = ch.get(0L); val a = ch.get(1L); val b = ch.get(2L)
         val clahe = Imgproc.createCLAHE(2.5, Size(4.0, 4.0))
         val l2 = Mat()
         clahe.apply(l, l2)
@@ -66,9 +73,9 @@ object WaterDetector {
     // ── 绿色主导 + 高饱和 + 亮 掩膜（对应 greenBallMaskJS）──
     private fun greenBallMask(bgr: Mat, hsv: Mat): Mat {
         val bgrCh = MatVector(); Core.split(bgr, bgrCh)
-        val r = bgrCh[2]; val g = bgrCh[1]; val bCh = bgrCh[0]
+        val r = bgrCh.get(2L); val g = bgrCh.get(1L); val bCh = bgrCh.get(0L)
         val hsvCh = MatVector(); Core.split(hsv, hsvCh)
-        val s = hsvCh[1]; val v = hsvCh[2]
+        val s = hsvCh.get(1L); val v = hsvCh.get(2L)
         val rp = Mat(); Core.add(r, Scalar(10.0), rp)
         val bp = Mat(); Core.add(bCh, Scalar(10.0), bp)
         val m1 = Mat(); Core.compare(g, rp, m1, CMP_GT)
@@ -79,23 +86,23 @@ object WaterDetector {
         val t2 = Mat(); Core.bitwise_and(t1, ms, t2)
         val out = Mat(); Core.bitwise_and(t2, mv, out)
         listOf(rp, bp, m1, m2, ms, mv, t1, t2).forEach { it.release() }
-        for (i in 0 until bgrCh.size().toInt()) bgrCh[i].release()
+        for (i in 0 until bgrCh.size().toInt()) bgrCh.get(i.toLong()).release()
         bgrCh.deallocate()
-        for (i in 0 until hsvCh.size().toInt()) hsvCh[i].release()
+        for (i in 0 until hsvCh.size().toInt()) hsvCh.get(i.toLong()).release()
         hsvCh.deallocate()
         return out
     }
 
     private fun brightSatMask(bgr: Mat, hsv: Mat): Mat {
         val hsvCh = MatVector(); Core.split(hsv, hsvCh)
-        val s = hsvCh[1]; val v = hsvCh[2]
+        val s = hsvCh.get(1L); val v = hsvCh.get(2L)
         val ms1 = Mat(); Core.compare(s, Scalar(90.0), ms1, CMP_GT)
         val mv1 = Mat(); Core.compare(v, Scalar(120.0), mv1, CMP_GT)
         val mv2 = Mat(); Core.compare(v, Scalar(250.0), mv2, CMP_LT)
         val t1 = Mat(); Core.bitwise_and(ms1, mv1, t1)
         val out = Mat(); Core.bitwise_and(t1, mv2, out)
         listOf(ms1, mv1, mv2, t1).forEach { it.release() }
-        for (i in 0 until hsvCh.size().toInt()) hsvCh[i].release()
+        for (i in 0 until hsvCh.size().toInt()) hsvCh.get(i.toLong()).release()
         hsvCh.deallocate()
         return out
     }
@@ -111,7 +118,7 @@ object WaterDetector {
         val h = mask.rows().toDouble()
         val n = contours.size().toInt()
         for (k in 0 until n) {
-            val cnt = contours[k]
+            val cnt = contours.get(k.toLong())
             val area = Imgproc.contourArea(cnt)
             if (area < 4) continue
             val mom = Imgproc.moments(cnt)
@@ -281,20 +288,20 @@ object WaterDetector {
         val calib = BOARD_CALIBRATION[boardType] ?: BOARD_CALIBRATION["Board1200"]!!
         val outW = (calib.first * WARP_PX_PER_MM)
         val outH = ((calib.second + WARP_HEADROOM_MM) * WARP_PX_PER_MM)
-        val srcMat = MatOfPoint2f(*src.toTypedArray())
-        val dstMat = MatOfPoint2f(
-            Point(0.0, 0.0),
-            Point((outW - 1).toDouble(), 0.0),
-            Point(0.0, (outH - 1).toDouble()),
-            Point((outW - 1).toDouble(), (outH - 1).toDouble())
-        )
-        val m = Calib3d.getPerspectiveTransform(srcMat, dstMat)
+        val srcVec = Point2fVector()
+        for (p in src) srcVec.push_back(Point2f(p.x().toFloat(), p.y().toFloat()))
+        val dstVec = Point2fVector()
+        dstVec.push_back(Point2f(0f, 0f))
+        dstVec.push_back(Point2f((outW - 1).toFloat(), 0f))
+        dstVec.push_back(Point2f(0f, (outH - 1).toFloat()))
+        dstVec.push_back(Point2f((outW - 1).toFloat(), (outH - 1).toFloat()))
+        val m = Calib3d.getPerspectiveTransform(srcVec, dstVec)
         val warped = Mat()
         Imgproc.warpPerspective(
             image, warped, m,
             Size(outW.toDouble(), outH.toDouble()), INTER_LINEAR
         )
-        srcMat.release(); dstMat.release(); m.release()
+        srcVec.deallocate(); dstVec.deallocate(); m.release()
         return warped
     }
 
@@ -317,12 +324,12 @@ object WaterDetector {
         for (i in 0..tubeCount) {
             val x = round(i * colWidth).toInt()
             val color = if (i % 10 == 0) Scalar(180.0, 180.0, 180.0) else Scalar(220.0, 220.0, 220.0)
-            Imgproc.line(result, Point(x.toDouble(), 0.0), Point(x.toDouble(), (h - 1).toDouble()), color, 1)
+            Imgproc.line(result, Point(x, 0), Point(x, h - 1), color, 1)
         }
 
         val linePts = detection.smoothedPoints.ifEmpty { detection.points }
         val valid = linePts.filter { it.second != null }
-            .map { Point(round(it.first).toDouble(), round(it.second!!).toDouble()) }
+            .map { Point(round(it.first).toInt(), round(it.second!!).toInt()) }
         for (p in 0 until valid.size - 1) {
             Imgproc.line(result, valid[p], valid[p + 1], Scalar(0.0, 0.0, 255.0), 2)
         }
@@ -330,7 +337,7 @@ object WaterDetector {
         for (q in detection.points.indices) {
             val pt = detection.points[q]
             if (pt.second != null && detection.confidences[q] > 0.15) {
-                val c = Point(round(pt.first).toDouble(), round(pt.second!!).toDouble())
+                val c = Point(round(pt.first).toInt(), round(pt.second!!).toInt())
                 Imgproc.circle(result, c, 4, Scalar(0.0, 255.0, 255.0), -1)
                 Imgproc.circle(result, c, 4, Scalar(0.0, 0.0, 255.0), 1)
             }
@@ -340,10 +347,10 @@ object WaterDetector {
         for (t in 0..tubeCount step 10) {
             val lx = round((t + 0.5) * colWidth).toInt()
             val label = if (t < tubeCount) (t + 1).toString() else tubeCount.toString()
-            Imgproc.putText(result, label, Point((lx - 8).toDouble(), 18.0), font, 0.4, Scalar(80.0, 80.0, 80.0), 1)
+            Imgproc.putText(result, label, Point(lx - 8, 18), font, 0.4, Scalar(80.0, 80.0, 80.0), 1)
         }
         val info = "$boardType | tubes:$tubeCount | success:${(detection.successRate).toFixed(1)}%"
-        Imgproc.putText(result, info, Point(10.0, (h - 15).toDouble()), font, 0.45, Scalar(0.0, 0.0, 255.0), 1)
+        Imgproc.putText(result, info, Point(10, h - 15), font, 0.45, Scalar(0.0, 0.0, 255.0), 1)
         return result
     }
 

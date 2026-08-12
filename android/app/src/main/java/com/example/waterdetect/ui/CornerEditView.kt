@@ -127,7 +127,7 @@ class CornerEditView @JvmOverloads constructor(
     }
 
     /** 在 orig 坐标 (ox,oy) 周围 radiusPx 内扫描红点质心，返回 orig 坐标或 null。 */
-    private fun scanRedCenter(ox: Float, oy: Float, radiusPx: Int): PointF? {
+    private fun scanRedCenter(ox: Double, oy: Double, radiusPx: Int): PointF? {
         val bmp = bitmap ?: return null
         val cx0 = max(0, (ox - radiusPx).toInt())
         val cy0 = max(0, (oy - radiusPx).toInt())

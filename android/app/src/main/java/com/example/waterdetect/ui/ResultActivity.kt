@@ -10,8 +10,8 @@ import com.example.waterdetect.model.BoardPresets
 import com.example.waterdetect.cv.OpenCvEngine
 import com.example.waterdetect.cv.WaterDetector
 import com.example.waterdetect.databinding.ActivityResultBinding
-import org.bytedeco.opencv.global.opencv_core.Mat
-import org.bytedeco.opencv.global.opencv_core.Point
+import org.bytedeco.opencv.opencv_core.Mat
+import org.bytedeco.opencv.opencv_core.Point
 
 class ResultActivity : AppCompatActivity() {
 
@@ -35,7 +35,7 @@ class ResultActivity : AppCompatActivity() {
         tubeCount = BoardPresets.get(boardType).tubeCount
 
         val pw = bmp.width.toDouble(); val ph = bmp.height.toDouble()
-        val pixelCorners = corners.map { Point(it.rx * pw, it.ry * ph) }
+        val pixelCorners = corners.map { Point((it.rx * pw).toInt(), (it.ry * ph).toInt()) }
 
         val mat = OpenCvEngine.bitmapToMat(bmp)
         val warp = WaterDetector.warpPerspective(mat, pixelCorners, boardType)
