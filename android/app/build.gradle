@@ -36,6 +36,14 @@ android {
     buildFeatures {
         viewBinding true
     }
+
+    // bytedeco 各平台原生 jar 内含 META-INF/native-image/** 的 GraalVM 配置，
+    // 多平台 jar 路径重复导致 mergeDebugJavaResource 冲突；Android 运行时不需要，直接排除。
+    packaging {
+        resources {
+            excludes += ["META-INF/native-image/**"]
+        }
+    }
 }
 
 dependencies {
