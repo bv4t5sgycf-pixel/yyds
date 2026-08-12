@@ -37,25 +37,36 @@ class ResultActivity : AppCompatActivity() {
         val pw = bmp.width.toDouble(); val ph = bmp.height.toDouble()
         val pixelCorners = corners.map { Point((it.rx * pw).toInt(), (it.ry * ph).toInt()) }
 
-        val mat = OpenCvEngine.bitmapToMat(bmp)
-        val warp = WaterDetector.warpPerspective(mat, pixelCorners, boardType)
-        mat.release()
-        warpMat = warp
+        try {
+            val mat = OpenCvEngine.bitmapToMat(bmp)
+            val warp = WaterDetector.warpPerspective(mat, pixelCorners, boardType)
+            mat.release()
+            warpMat = warp
 
-        runDetection(1)
-        setupSmoothButtons()
+            runDetection(1)
+            setupSmoothButtons()
 
-        binding.btnDiag.setOnClickListener {
-            showDiag = !showDiag
-            redraw()
+            binding.btnDiag.setOnClickListener {
+                showDiag = !showDiag
+                redraw()
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ResultActivity", "分析失败", e)
+            android.widget.Toast.makeText(this, "分析失败：${e.message}", android.widget.Toast.LENGTH_LONG).show()
+            finish()
         }
     }
 
     private fun runDetection(smooth: Int) {
-        val res = WaterDetector.detectWaterBalls(warpMat!!, tubeCount, 0.0, boardType, smooth)
-        cacheResult = res
-        updateText(res)
-        redraw()
+        try {
+            val res = WaterDetector.detectWaterBalls(warpMat!!, tubeCount, 0.0, boardType, smooth)
+            cacheResult = res
+            updateText(res)
+            redraw()
+        } catch (e: Exception) {
+            android.util.Log.e("ResultActivity", "水球检测失败", e)
+            android.widget.Toast.makeText(this, "水球检测失败：${e.message}", android.widget.Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun updateText(res: WaterDetector.DetectResult) {
