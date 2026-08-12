@@ -4,16 +4,15 @@ import android.graphics.Bitmap
 import android.util.Log
 import org.bytedeco.javacpp.Loader
 import org.bytedeco.opencv.opencv_core.Mat
-import org.bytedeco.opencv.global.opencv_core.CV_8UC4
-import org.bytedeco.opencv.global.opencv_imgproc.Imgproc
-import org.bytedeco.opencv.global.opencv_imgproc.COLOR_BGRA2BGR
-import org.bytedeco.opencv.global.opencv_imgproc.COLOR_BGR2BGRA
+import org.bytedeco.opencv.global.opencv_core
+import org.bytedeco.opencv.global.opencv_imgproc
 
 /**
  * OpenCV 初始化与 Bitmap<->Mat 互转（bytedeco 完整构建）。
  * - Loader.load 在运行时把对应 ABI 的原生 so 从 APK 提取并加载，无运行时下载、可离线。
  * - bytedeco 不提供兼容自身 Mat 的 Bitmap 工具类，故这里手动做 BGRA/ARGB 像素互转。
  * 内部 Mat 一律为 3 通道 BGR；Bitmap 经 BGRA 中转。
+ * bytedeco 的全局函数/常量位于 opencv_core / opencv_imgproc 包级类（非旧 OpenCV 的 Core/Imgproc）。
  */
 object OpenCvEngine {
 
@@ -43,7 +42,7 @@ object OpenCvEngine {
         val h = bmp.height
         val pixels = IntArray(w * h)
         bmp.getPixels(pixels, 0, w, 0, 0, w, h)
-        val rgba = Mat(h, w, CV_8UC4)
+        val rgba = Mat(h, w, opencv_core.CV_8UC4)
         val buf = ByteArray(w * h * 4)
         for (i in pixels.indices) {
             val p = pixels[i]
@@ -55,7 +54,7 @@ object OpenCvEngine {
         }
         rgba.put(0, 0, buf)
         val bgr = Mat()
-        Imgproc.cvtColor(rgba, bgr, COLOR_BGRA2BGR)
+        opencv_imgproc.cvtColor(rgba, bgr, opencv_imgproc.COLOR_BGRA2BGR)
         rgba.release()
         return bgr
     }
@@ -64,7 +63,7 @@ object OpenCvEngine {
         val w = mat.cols()
         val h = mat.rows()
         val rgba = Mat()
-        Imgproc.cvtColor(mat, rgba, COLOR_BGR2BGRA)
+        opencv_imgproc.cvtColor(mat, rgba, opencv_imgproc.COLOR_BGR2BGRA)
         val buf = ByteArray(w * h * 4)
         rgba.put(0, 0, buf)
         val pixels = IntArray(w * h)

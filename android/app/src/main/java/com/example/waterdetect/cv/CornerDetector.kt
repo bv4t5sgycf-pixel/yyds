@@ -1,13 +1,11 @@
 package com.example.waterdetect.cv
 
-import org.bytedeco.opencv.global.opencv_core.*
-import org.bytedeco.opencv.global.opencv_imgproc.*
+import org.bytedeco.opencv.global.opencv_core
+import org.bytedeco.opencv.global.opencv_imgproc
 import org.bytedeco.opencv.opencv_core.Mat
 import org.bytedeco.opencv.opencv_core.MatVector
 import org.bytedeco.opencv.opencv_core.Scalar
 import org.bytedeco.opencv.opencv_core.Size
-import org.bytedeco.opencv.opencv_core.Moments
-import org.bytedeco.opencv.opencv_core.Rect
 import kotlin.math.*
 
 /**
@@ -90,42 +88,42 @@ object CornerDetector {
         val scale = min(1.0, maxSide / max(mat.cols(), mat.rows()))
         val small = Mat()
         if (scale < 1.0) {
-            Imgproc.resize(mat, small, Size(Math.round(mat.cols() * scale).toDouble(), Math.round(mat.rows() * scale).toDouble()), 0.0, 0.0, Imgproc.INTER_AREA)
+            opencv_imgproc.resize(mat, small, Size(Math.round(mat.cols() * scale).toDouble(), Math.round(mat.rows() * scale).toDouble()), 0.0, 0.0, opencv_imgproc.INTER_AREA)
         } else {
             mat.copyTo(small)
         }
 
         val hsv = Mat()
-        Imgproc.cvtColor(small, hsv, Imgproc.COLOR_BGR2HSV)
+        opencv_imgproc.cvtColor(small, hsv, opencv_imgproc.COLOR_BGR2HSV)
 
         val m1 = Mat(); val m2 = Mat(); val mask = Mat()
-        Core.inRange(hsv, Scalar(0.0, 45.0, 40.0), Scalar(18.0, 255.0, 255.0), m1)
-        Core.inRange(hsv, Scalar(152.0, 40.0, 40.0), Scalar(180.0, 255.0, 255.0), m2)
-        Core.bitwise_or(m1, m2, mask)
+        opencv_core.inRange(hsv, Scalar(0.0, 45.0, 40.0), Scalar(18.0, 255.0, 255.0), m1)
+        opencv_core.inRange(hsv, Scalar(152.0, 40.0, 40.0), Scalar(180.0, 255.0, 255.0), m2)
+        opencv_core.bitwise_or(m1, m2, mask)
 
-        val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, Size(3.0, 3.0))
+        val kernel = opencv_imgproc.getStructuringElement(opencv_imgproc.MORPH_ELLIPSE, Size(3.0, 3.0))
         val opened = Mat()
-        Imgproc.morphologyEx(mask, opened, Imgproc.MORPH_OPEN, kernel)
+        opencv_imgproc.morphologyEx(mask, opened, opencv_imgproc.MORPH_OPEN, kernel)
 
         val contours = MatVector()
         val hier = Mat()
-        Imgproc.findContours(opened, contours, hier, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE)
+        opencv_imgproc.findContours(opened, contours, hier, opencv_imgproc.RETR_EXTERNAL, opencv_imgproc.CHAIN_APPROX_SIMPLE)
 
         val minArea = small.cols() * small.rows() * 0.00008
         val cands = mutableListOf<Cand>()
         for (k in 0 until contours.size().toInt()) {
             val cnt = contours.get(k.toLong())
-            val area = Imgproc.contourArea(cnt)
+            val area = opencv_imgproc.contourArea(cnt)
             if (area < minArea) continue
-            val rect = Imgproc.boundingRect(cnt)
+            val rect = opencv_imgproc.boundingRect(cnt)
             val bw = rect.width(); val bh = rect.height()
             if (bw < 1 || bh < 1) continue
             val aspect = max(bw, bh).toDouble() / (min(bw, bh) + 1e-6)
             if (aspect > 4.0) continue
-            val peri = Imgproc.arcLength(cnt, true)
+            val peri = opencv_imgproc.arcLength(cnt, true)
             val circ = if (peri > 0) (4 * Math.PI * area / (peri * peri + 1e-6)) else 0.0
             if (circ < 0.25) continue
-            val mom = Imgproc.moments(cnt)
+            val mom = opencv_imgproc.moments(cnt)
             if (mom.m00() == 0.0) continue
             val cx = mom.m10() / mom.m00()
             val cy = mom.m01() / mom.m00()
