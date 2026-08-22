@@ -40,9 +40,12 @@ object WaterDetector {
         val smoothedPoints: List<Pair<Double, Double?>>,
         val successRate: Double,
         val fullHeightMm: Int,
-        val tubeCount: Int
+        val tubeCount: Int,
+        val columnMethod: String = "unknown",
+        val columnSnapRate: Double = 0.0
     )
 
+    private fun round1(x: Double): Double = round(x * 10) / 10
     private fun round2(x: Double): Double = round(x * 100) / 100
 
     // ── 预处理：CLAHE + 双边滤波 ──
@@ -188,6 +191,118 @@ object WaterDetector {
         return smoothed
     }
 
+    // ── 管列直接检测（自动修复视差）──
+    // 校正后正视图的逐列亮度轮廓里，管体亮、分隔墙暗，呈单频率周期信号。
+    // 以等分网格为强先验，逐管在其理想位 ±0.6*pitch 窗口内取「离网格理想位最近」的峰；
+    // 窗口内无峰则保持网格位（不漂移、不塌陷）。轮廓异常整体回退等分（与旧逻辑一致）。
+    private fun _columnBrightnessProfile(warpedImage: Mat): DoubleArray {
+        val gray = Mat()
+        opencv_imgproc.cvtColor(warpedImage, gray, opencv_imgproc.COLOR_BGR2GRAY)
+        val h = gray.rows(); val w = gray.cols()
+        val y0 = max(1, (h * 0.2).toInt())
+        val y1 = max(y0 + 1, (h * 0.8).toInt())
+        val band = Mat(gray, Rect(0, y0, w, y1 - y0))
+        val bh = band.rows()
+        val prof = DoubleArray(w)
+        for (y in 0 until bh) {
+            val ptr = band.ptr(y)
+            for (x in 0 until w) prof[x] += (ptr.get(x).toInt() and 0xFF)
+        }
+        if (bh > 0) for (x in 0 until w) prof[x] /= bh
+        band.release(); gray.release()
+        return prof
+    }
+
+    // 1D 高斯平滑（手动实现，避免依赖 bytedeco 浮点 Mat 读写；边界复制）
+    private fun gaussian1d(signal: DoubleArray, sigma: Double): DoubleArray {
+        val n = signal.size
+        val radius = max(1, ceil(3.0 * sigma).toInt())
+        val kernel = DoubleArray(2 * radius + 1)
+        var sum = 0.0
+        for (g in -radius..radius) {
+            val v = exp(-(g * g) / (2.0 * sigma * sigma))
+            kernel[g + radius] = v; sum += v
+        }
+        for (k in kernel.indices) kernel[k] /= sum
+        val out = DoubleArray(n)
+        for (i in 0 until n) {
+            var acc = 0.0
+            for (g in -radius..radius) {
+                val j = (i + g).coerceIn(0, n - 1)
+                acc += signal[j] * kernel[g + radius]
+            }
+            out[i] = acc
+        }
+        return out
+    }
+
+    // 找局部极大点，按亮度降序贪心 NMS（合并双倍频率，保留更亮者）。
+    // 边界亦视为合法局部极大（当轮廓在该侧转向），避免边缘管中心漏检。
+    private fun _findPeaks(prof: DoubleArray, minDistance: Double): List<Int> {
+        val n = prof.size
+        val cand = mutableListOf<Int>()
+        for (j in 0 until n) {
+            val leftOk = (j == 0) || (prof[j] > prof[j - 1])
+            val rightOk = (j == n - 1) || (prof[j] >= prof[j + 1])
+            if (leftOk && rightOk) cand.add(j)
+        }
+        cand.sortByDescending { prof[it] }
+        val accepted = mutableListOf<Int>()
+        for (j in cand) {
+            if (accepted.all { abs(j - it) >= minDistance }) accepted.add(j)
+        }
+        accepted.sort()
+        return accepted
+    }
+
+    // 等分网格列中心（回退用，与旧生产逻辑一致）
+    private fun _gridCenters(tubeCount: Int, leftPx: Double, colWidth: Double): List<Double> {
+        return (0 until tubeCount).map { leftPx + (it + 0.5) * colWidth }
+    }
+
+    private fun _detectPipeColumns(
+        warpedImage: Mat, tubeCount: Int, leftPx: Double, wHi: Int, colWidth: Double
+    ): Triple<List<Double>, String, Double> {
+        val pitch = if (colWidth > 0) colWidth else wHi / max(1, tubeCount).toDouble()
+        val profile = _columnBrightnessProfile(warpedImage)
+        val sigma = max(1.5, pitch * 0.25)
+        val prof = gaussian1d(profile, sigma)
+        val peaks = _findPeaks(prof, max(2.0, pitch * 0.4))
+        if (peaks.isEmpty()) {
+            return Triple(_gridCenters(tubeCount, leftPx, colWidth), "grid", 0.0)
+        }
+        val win = pitch * 0.6
+        val centers = MutableList(tubeCount) { 0.0 }
+        val used = BooleanArray(peaks.size)
+        var moved = 0
+        for (i in 0 until tubeCount) {
+            val ideal = leftPx + (i + 0.5) * colWidth
+            var bestJ = -1
+            var bestKey = Pair(1e18, -1e18)
+            for (k in peaks.indices) {
+                if (used[k]) continue
+                val pk = peaks[k].toDouble()
+                if (ideal - win <= pk && pk <= ideal + win) {
+                    val key = Pair(abs(pk - ideal), -prof[peaks[k]])
+                    if (key < bestKey) { bestKey = key; bestJ = k }
+                }
+            }
+            if (bestJ >= 0) {
+                centers[i] = peaks[bestJ].toDouble()
+                used[bestJ] = true
+                moved++
+            } else {
+                centers[i] = ideal
+            }
+        }
+        val snapRate = moved.toDouble() / tubeCount
+        // 轮廓异常（几乎抓不到峰）→ 回退等分
+        if (snapRate < 0.3 || peaks.size < (tubeCount * 0.3).toInt()) {
+            return Triple(_gridCenters(tubeCount, leftPx, colWidth), "grid", 0.0)
+        }
+        return Triple(centers, "detected", snapRate)
+    }
+
     private fun finalize(
         rawCys: List<Double?>,
         confidences: List<Double>,
@@ -196,11 +311,11 @@ object WaterDetector {
         tubeCount: Int,
         zeroOffset: Double,
         boardType: String,
-        smoothWindow: Int
+        smoothWindow: Int,
+        centersDisp: List<Double>
     ): DetectResult {
         val calib = BOARD_CALIBRATION[boardType] ?: BOARD_CALIBRATION["Board1200"]!!
         val fullHeightMm = calib.second
-        val dispW = calib.first
         val dispH = calib.second + WARP_HEADROOM_MM
         val scale = WARP_PX_PER_MM.toDouble()
 
@@ -208,18 +323,18 @@ object WaterDetector {
         val heights = mutableListOf<Double?>()
         val smoothedPoints = mutableListOf<Pair<Double, Double?>>()
         for (i in smoothedCys.indices) {
+            // centersDisp[i] 为各管列中心的 1:1 显示坐标 x(mm)，已含管列检测偏移或网格偏移
+            val cxDisp = centersDisp[i]
             val cyHi = smoothedCys[i]
             if (cyHi != null) {
                 val cyDisp = cyHi / scale
                 val heightPx = dispH - 1 - cyDisp
-                val heightMm = max(0.0, round2(heightPx - zeroOffset))
+                val heightMm = max(0.0, round1(heightPx - zeroOffset))
                 heights.add(heightMm)
-                val cx = round2((i + 0.5) * dispW / tubeCount)
-                smoothedPoints.add(cx to round2(cyDisp))
+                smoothedPoints.add(cxDisp to round1(cyDisp))
             } else {
                 heights.add(null)
-                val cx = round2((i + 0.5) * dispW / tubeCount)
-                smoothedPoints.add(cx to null)
+                smoothedPoints.add(cxDisp to null)
             }
         }
         val successRate = if (tubeCount > 0) round2(validCount.toDouble() / tubeCount * 100) else 0.0
@@ -241,17 +356,21 @@ object WaterDetector {
         tubeCount: Int,
         zeroOffset: Double = 0.0,
         boardType: String = "Board1200",
-        smoothWindow: Int = DEFAULT_SMOOTH_WINDOW
+        smoothWindow: Int = DEFAULT_SMOOTH_WINDOW,
+        leftMarginMm: Double = 0.0,
+        rightMarginMm: Double = 0.0
     ): DetectResult {
         var sw = if (smoothWindow < 1) DEFAULT_SMOOTH_WINDOW else smoothWindow
         if (sw % 2 == 0) sw += 1
 
         val scale = WARP_PX_PER_MM.toDouble()
         val hHi = warpedHi.rows(); val wHi = warpedHi.cols()
-        val colWidth = wHi.toDouble() / tubeCount
-        val roiWidth = max(4, floor(colWidth * 0.8).toInt())
+        // 左右间距(mm) → 高分辨率像素：补偿四角标记与首/末管的实际偏移（视差等）
+        val leftPx = max(0.0, leftMarginMm) * scale
+        val rightPx = max(0.0, rightMarginMm) * scale
+        val usableW = max(wHi * 0.2, wHi - leftPx - rightPx)   // 至少保留 20% 宽度，防止误填过大
+        val colWidth = usableW / tubeCount      // 高分辨率下的列宽
         val calib = BOARD_CALIBRATION[boardType] ?: BOARD_CALIBRATION["Board1200"]!!
-        val dispW = calib.first
         val dispH = calib.second + WARP_HEADROOM_MM
 
         val proc = preprocess(warpedHi)
@@ -259,28 +378,77 @@ object WaterDetector {
         val confidences = mutableListOf<Double>()
         val points = mutableListOf<Pair<Double, Double?>>()
         var validCount = 0
+
+        // —— 管列检测：优先用亮度轮廓直接检测，回退等分网格 ——
+        val (centersHiTmp, columnMethod, snapRate) = _detectPipeColumns(warpedHi, tubeCount, leftPx, wHi, colWidth)
+        val centersHi = centersHiTmp.toMutableList()
+        var centersDisp = centersHi.map { it / scale }
+
         for (i in 0 until tubeCount) {
-            val cxHi = floor((i + 0.5) * colWidth).toInt()
-            val x1 = max(0, cxHi - roiWidth / 2)
-            val x2 = min(wHi, x1 + roiWidth)
+            val cxHi = round(centersHi[i]).toInt()
+            // 自适应 ROI 半宽：不侵入相邻管，防止剪切/串扰
+            val gapLeft = if (i > 0) (cxHi - centersHi[i - 1]) else colWidth
+            val gapRight = if (i < tubeCount - 1) (centersHi[i + 1] - cxHi) else colWidth
+            var roiHalf = min(0.45 * min(gapLeft, gapRight), 0.5 * colWidth).toInt()
+            roiHalf = max(4, min(roiHalf, (colWidth * 0.49).toInt()))
+            val x1 = max(0, cxHi - roiHalf)
+            val x2 = min(wHi, cxHi + roiHalf)
+            val x2f = if (x2 <= x1) min(wHi, x1 + 1) else x2
             // bytedeco 无 submat(int,int,int,int)，用 Mat(m, Rect) 取列条带
-            val roiCol = Mat(proc, Rect(x1, 0, x2 - x1, hHi))
+            val roiCol = Mat(proc, Rect(x1, 0, x2f - x1, hHi))
             val (cy, conf) = detectColumnBall(roiCol)
             roiCol.release()
             rawCys.add(cy)
             confidences.add(conf)
+            val cxDisp = centersDisp[i]
             if (cy != null) {
                 val cyDisp = cy / scale
-                val cxDisp = cxHi / scale
-                points.add(round2(cxDisp) to round2(cyDisp))
+                points.add(round1(cxDisp) to round1(cyDisp))
                 validCount++
             } else {
-                val cx = round2((i + 0.5) * dispW / tubeCount)
-                points.add(cx to null)
+                points.add(round1(cxDisp) to null)
             }
         }
+
+        // —— 安全网：检测中心导致的离群读数，回退到网格中心重测 ——
+        // 仅当某管读数相对邻居明显离群、且其检测中心相对网格偏移较大时才回退，
+        // 既保留视差修正，又避免边缘伪峰把边缘管读成离群值（如末管被读满）。
+        val gridCentersHi = _gridCenters(tubeCount, leftPx, colWidth)
+        val outlierPx = 40.0 * scale          // ≈40mm：与「跳变>40mm」指标对齐，仅校正明显离群
+        for (i in 0 until tubeCount) {
+            if (rawCys[i] == null) continue
+            val nb = mutableListOf<Double>()
+            if (i - 1 >= 0 && rawCys[i - 1] != null) nb.add(rawCys[i - 1]!!)
+            if (i + 1 < tubeCount && rawCys[i + 1] != null) nb.add(rawCys[i + 1]!!)
+            if (nb.isEmpty()) continue
+            val sorted = nb.sorted()
+            val med = if (sorted.size % 2 == 1) sorted[sorted.size / 2]
+                      else (sorted[sorted.size / 2 - 1] + sorted[sorted.size / 2]) / 2.0
+            if (abs(rawCys[i]!! - med) > outlierPx &&
+                abs(centersHi[i] - gridCentersHi[i]) > 0.3 * colWidth) {
+                val cxG = round(gridCentersHi[i]).toInt()
+                val gHalf = max(4, (colWidth * 0.4).toInt())
+                val gx1 = max(0, cxG - gHalf)
+                val gx2 = min(wHi, cxG + gHalf)
+                if (gx2 > gx1) {
+                    val roiG = Mat(proc, Rect(gx1, 0, gx2 - gx1, hHi))
+                    val (cyG, confG) = detectColumnBall(roiG)
+                    roiG.release()
+                    if (cyG != null && abs(cyG - med) < abs(rawCys[i]!! - med)) {
+                        rawCys[i] = cyG
+                        confidences[i] = round2(confG)
+                        centersHi[i] = gridCentersHi[i]
+                        points[i] = round1(gridCentersHi[i] / scale) to round1(cyG / scale)
+                    }
+                }
+            }
+        }
+        // 检测中心可能被安全网回退，刷新显示坐标
+        centersDisp = centersHi.map { it / scale }
+
         proc.release()
-        return finalize(rawCys, confidences, points, validCount, tubeCount, zeroOffset, boardType, sw)
+        val base = finalize(rawCys, confidences, points, validCount, tubeCount, zeroOffset, boardType, sw, centersDisp)
+        return base.copy(columnMethod = columnMethod, columnSnapRate = snapRate)
     }
 
     // ── 透视校正 ──
@@ -326,15 +494,27 @@ object WaterDetector {
         return dst
     }
 
-    /** 结果图绘制：网格 + 水位折线 + 检测点 + 标签。 */
-    fun drawResult(warpedImage: Mat, detection: DetectResult, boardType: String = "Board1200"): Mat {
+    /** 结果图绘制：网格 + 水位折线 + 检测点 + 标签。
+     *  与 Python renderer.draw_result 一致：warpedImage 应为显示分辨率图（1px=1mm），
+     *  网格/标签随左右间距偏移。 */
+    fun drawResult(
+        warpedImage: Mat,
+        detection: DetectResult,
+        boardType: String = "Board1200",
+        leftMarginMm: Double = 0.0,
+        rightMarginMm: Double = 0.0
+    ): Mat {
         val result = warpedImage.clone()
         val h = result.rows(); val w = result.cols()
         val tubeCount = detection.tubeCount
-        val colWidth = w.toDouble() / tubeCount
+        // 网格与标签随左右间距偏移（与 Python renderer.draw_result 一致）
+        val leftM = max(0.0, leftMarginMm)
+        val rightM = max(0.0, rightMarginMm)
+        val usable = max(w * 0.2, w - leftM - rightM)
+        val colWidth = usable / tubeCount
 
         for (i in 0..tubeCount) {
-            val x = round(i * colWidth).toInt()
+            val x = round(leftM + i * colWidth).toInt()
             val color = if (i % 10 == 0) Scalar(180.0, 180.0, 180.0, 0.0) else Scalar(220.0, 220.0, 220.0, 0.0)
             opencv_imgproc.line(result, Point(x, 0), Point(x, h - 1), color)
         }
@@ -357,11 +537,11 @@ object WaterDetector {
 
         val font = opencv_imgproc.FONT_HERSHEY_SIMPLEX
         for (t in 0..tubeCount step 10) {
-            val lx = round((t + 0.5) * colWidth).toInt()
+            val lx = round(leftM + (t + 0.5) * colWidth).toInt()
             val label = if (t < tubeCount) (t + 1).toString() else tubeCount.toString()
             opencv_imgproc.putText(result, label, Point(lx - 8, 18), font, 0.4, Scalar(80.0, 80.0, 80.0, 0.0))
         }
-        val info = "$boardType | tubes:$tubeCount | success:${(detection.successRate).toFixed(1)}%"
+        val info = "$boardType | tubes:$tubeCount | success:${(detection.successRate).toFixed(1)}% | ${detection.columnMethod}"
         opencv_imgproc.putText(result, info, Point(10, h - 15), font, 0.45, Scalar(0.0, 0.0, 255.0, 0.0))
         return result
     }
@@ -371,7 +551,11 @@ object WaterDetector {
     /** 平滑度切换时复用已检测的 rawCys 重新 finalize，免去整图重检测。 */
     fun recompute(prev: DetectResult, smoothWindow: Int, boardType: String): DetectResult {
         val validCount = prev.rawCys.count { it != null }
-        return finalize(prev.rawCys, prev.confidences, prev.points, validCount, prev.tubeCount, 0.0, boardType, smoothWindow)
+        // 列中心显示坐标由已存 points 的 x 还原（与 detect_water_balls 输出一致）
+        val centersDisp = prev.points.map { it.first }
+        val base = finalize(prev.rawCys, prev.confidences, prev.points, validCount, prev.tubeCount, 0.0, boardType, smoothWindow, centersDisp)
+        // 平滑不改变管列来源，沿用初次检测的列方法/吸附率
+        return base.copy(columnMethod = prev.columnMethod, columnSnapRate = prev.columnSnapRate)
     }
 
     /** 诊断掩膜：把 greenBallMask + brightSatMask 以绿色半透明叠在预处理图上，帮助定位水球漏检。 */

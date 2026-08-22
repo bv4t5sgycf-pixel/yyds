@@ -22,6 +22,9 @@ class ResultActivity : AppCompatActivity() {
     private var showDiag = 0   // 0=原透视图, 1=结果网格图, 2=掩膜诊断图
     private var lastDrawMat: Mat? = null
     private var cacheResult: WaterDetector.DetectResult? = null
+    private var leftMargin = 9.0
+    private var rightMargin = 9.0
+    private var currentSmooth = 1
     private val diagLabels = listOf("查看诊断图", "查看原图", "查看掩膜")
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,6 +49,7 @@ class ResultActivity : AppCompatActivity() {
 
             runDetection(1)
             setupSmoothButtons()
+            setupMarginInputs()
 
             binding.btnDiag.setOnClickListener {
                 showDiag = (showDiag + 1) % 3
@@ -60,8 +64,12 @@ class ResultActivity : AppCompatActivity() {
     }
 
     private fun runDetection(smooth: Int) {
+        currentSmooth = smooth
         try {
-            val res = WaterDetector.detectWaterBalls(warpMat!!, tubeCount, 0.0, boardType, smooth)
+            val res = WaterDetector.detectWaterBalls(
+                warpMat!!, tubeCount, 0.0, boardType, smooth,
+                leftMarginMm = leftMargin, rightMarginMm = rightMargin
+            )
             cacheResult = res
             updateText(res)
             redraw()
@@ -88,7 +96,11 @@ class ResultActivity : AppCompatActivity() {
         val draw = when (showDiag) {
             1 -> {
                 val res = cacheResult ?: return
-                WaterDetector.drawResult(warpMat!!, res, boardType)
+                // 必须在显示分辨率图（1px=1mm）上绘制，坐标才与 points(mm) 对齐
+                val disp = WaterDetector.toDisplayImage(warpMat!!, boardType)
+                val r = WaterDetector.drawResult(disp, res, boardType, leftMargin, rightMargin)
+                disp.release()
+                r
             }
             2 -> WaterDetector.debugMaskOverlay(warpMat!!)
             else -> WaterDetector.toDisplayImage(warpMat!!, boardType)
@@ -113,6 +125,7 @@ class ResultActivity : AppCompatActivity() {
         map.forEach { (btn, lvl) ->
             btn.setOnClickListener {
                 val prev = cacheResult ?: return@setOnClickListener
+                currentSmooth = lvl
                 val recomputed = WaterDetector.recompute(prev, lvl, boardType)
                 cacheResult = recomputed
                 updateText(recomputed)
@@ -121,6 +134,28 @@ class ResultActivity : AppCompatActivity() {
             }
         }
         highlight(binding.smooth1)
+    }
+
+    private fun setupMarginInputs() {
+        fun parse(text: String?): Double {
+            val v = text?.toDoubleOrNull()
+            return if (v != null && v >= 0) v else 0.0
+        }
+        val rerun = {
+            leftMargin = parse(binding.leftMarginInput.text.toString())
+            rightMargin = parse(binding.rightMarginInput.text.toString())
+            runDetection(currentSmooth)
+        }
+        binding.leftMarginInput.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) { rerun() }
+        })
+        binding.rightMarginInput.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) { rerun() }
+        })
     }
 
     override fun onDestroy() {
