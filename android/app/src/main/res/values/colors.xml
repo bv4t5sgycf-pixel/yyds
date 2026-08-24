@@ -1,12 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- 主色（与小程序一致） -->
     <color name="blue_primary">#1a6fb5</color>
+    <color name="blue_light">#2980b9</color>
     <color name="blue_dark">#155a93</color>
-    <color name="bg">#f2f5f8</color>
+    <color name="bg">#f5f7fa</color>
     <color name="card">#ffffff</color>
-    <color name="text_main">#1f2d3d</color>
-    <color name="text_sub">#6b7c8f</color>
+    <color name="text_main">#1a1a1a</color>
+    <color name="text_sub">#888888</color>
+    <color name="text_hint">#aaaaaa</color>
     <color name="divider">#e3e9ef</color>
+    <color name="success">#27ae60</color>
+    <color name="danger">#e74c3c</color>
+    <!-- 板型列表 -->
+    <color name="board_item_bg">#fafafa</color>
+    <color name="board_item_border">#e8eaed</color>
+    <color name="board_active_bg">#eaf2f9</color>
+    <!-- 参数网格底色 -->
+    <color name="param_bg">#f5f7fa</color>
+    <!-- 板型圆点颜色（与小程序一致） -->
+    <color name="board1008">#F4D03F</color>
+    <color name="board1200">#2ECC71</color>
+    <!-- 四角拖拽手柄 -->
     <color name="tl">#e74c3c</color>
     <color name="tr">#2ecc71</color>
     <color name="bl">#3498db</color>

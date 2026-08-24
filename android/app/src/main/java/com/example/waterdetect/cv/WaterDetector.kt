@@ -549,11 +549,11 @@ object WaterDetector {
     private fun Double.toFixed(n: Int): String = "%.${n}f".format(this)
 
     /** 平滑度切换时复用已检测的 rawCys 重新 finalize，免去整图重检测。 */
-    fun recompute(prev: DetectResult, smoothWindow: Int, boardType: String): DetectResult {
+    fun recompute(prev: DetectResult, smoothWindow: Int, boardType: String, zeroOffset: Double = 0.0): DetectResult {
         val validCount = prev.rawCys.count { it != null }
         // 列中心显示坐标由已存 points 的 x 还原（与 detect_water_balls 输出一致）
         val centersDisp = prev.points.map { it.first }
-        val base = finalize(prev.rawCys, prev.confidences, prev.points, validCount, prev.tubeCount, 0.0, boardType, smoothWindow, centersDisp)
+        val base = finalize(prev.rawCys, prev.confidences, prev.points, validCount, prev.tubeCount, zeroOffset, boardType, smoothWindow, centersDisp)
         // 平滑不改变管列来源，沿用初次检测的列方法/吸附率
         return base.copy(columnMethod = prev.columnMethod, columnSnapRate = prev.columnSnapRate)
     }

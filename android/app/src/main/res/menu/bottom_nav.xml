@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_analysis"
+        android:icon="@drawable/ic_tab_analysis"
+        android:title="分析" />
+    <item
+        android:id="@+id/nav_history"
+        android:icon="@drawable/ic_tab_history"
+        android:title="记录" />
+    <item
+        android:id="@+id/nav_settings"
+        android:icon="@drawable/ic_tab_settings"
+        android:title="设置" />
+</menu>

@@ -1,138 +1,684 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="@color/bg">
 
+    <!-- 顶部蓝色标题栏（与小程序导航栏一致） -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:background="@drawable/bg_nav_gradient"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="14dp">
 
         <TextView
-            android:layout_width="match_parent"
+            android:id="@+id/btnBack"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="② 四角定位与修正"
-            android:textStyle="bold"
+            android:text="‹"
+            android:textSize="26sp"
+            android:textColor="#ffffff"
+            android:paddingEnd="12dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="拍照采集"
             android:textSize="18sp"
-            android:textColor="@color/text_main" />
+            android:textStyle="bold"
+            android:textColor="#ffffff" />
+    </LinearLayout>
 
-        <com.google.android.material.card.MaterialCardView
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            app:cardCornerRadius="12dp"
-            app:cardBackgroundColor="@color/card">
+            android:orientation="vertical"
+            android:padding="16dp">
 
-            <FrameLayout
+            <!-- 板型信息条（所有步骤可见） -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="8dp">
+                app:cardCornerRadius="12dp"
+                app:cardBackgroundColor="@color/card"
+                app:strokeWidth="0dp">
 
-                <com.example.waterdetect.ui.CornerEditView
-                    android:id="@+id/cornerView"
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
-            </FrameLayout>
-        </com.google.android.material.card.MaterialCardView>
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
 
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            app:cardCornerRadius="12dp"
-            app:cardBackgroundColor="@color/card">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
 
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="⚙ "
+                            android:textSize="15sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="当前板型: "
+                            android:textSize="14sp"
+                            android:textColor="@color/text_main" />
+
+                        <TextView
+                            android:id="@+id/infoBoardName"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="板型 1008"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/blue_primary" />
+
+                        <TextView
+                            android:id="@+id/infoTubeCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="（84管）"
+                            android:textSize="14sp"
+                            android:textColor="@color/text_main" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="6dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="⚡ "
+                            android:textSize="15sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="零点修正: "
+                            android:textSize="14sp"
+                            android:textColor="@color/text_main" />
+
+                        <TextView
+                            android:id="@+id/infoZero"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0 mm"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/blue_primary" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 步骤指示器：拍照 → 四角识别 → 逐管找球 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="14dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnDetect"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:text="自动检测四角" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <Switch
-                        android:id="@+id/snapSwitch"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="true" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="自动吸附"
-                        android:textColor="@color/text_main" />
-
-                    <Spinner
-                        android:id="@+id/snapLevel"
-                        android:layout_width="0dp"
-                        android:layout_height="40dp"
-                        android:layout_weight="1"
-                        android:layout_marginStart="12dp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="放大"
-                        android:textColor="@color/text_main" />
-
-                    <SeekBar
-                        android:id="@+id/magZoom"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="12dp"
-                        android:max="16"
-                        android:progress="1" />
-
-                    <TextView
-                        android:id="@+id/magZoomVal"
-                        android:layout_width="48dp"
-                        android:layout_height="wrap_content"
-                        android:gravity="end"
-                        android:text="1×"
-                        android:textColor="@color/text_main" />
-                </LinearLayout>
+                <View
+                    android:id="@+id/stepDot0"
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:background="@drawable/bg_step_dot" />
 
                 <TextView
+                    android:id="@+id/stepLabel0"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="拍照"
+                    android:textSize="13sp" />
+
+                <View
+                    android:id="@+id/stepLine0"
+                    android:layout_width="0dp"
+                    android:layout_height="2dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_step_line" />
+
+                <View
+                    android:id="@+id/stepDot1"
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:background="@drawable/bg_step_dot" />
+
+                <TextView
+                    android:id="@+id/stepLabel1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="四角识别"
+                    android:textSize="13sp" />
+
+                <View
+                    android:id="@+id/stepLine1"
+                    android:layout_width="0dp"
+                    android:layout_height="2dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_step_line" />
+
+                <View
+                    android:id="@+id/stepDot2"
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:background="@drawable/bg_step_dot" />
+
+                <TextView
+                    android:id="@+id/stepLabel2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="逐管找球"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- ============ Step 0: 拍照 ============ -->
+            <LinearLayout
+                android:id="@+id/step0Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="14dp">
+
+                <!-- 照片预览 / 占位 -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="12dp"
+                    app:cardBackgroundColor="@color/card"
+                    app:strokeWidth="0dp">
+
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="8dp">
+
+                        <ImageView
+                            android:id="@+id/previewImage"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:adjustViewBounds="true"
+                            android:scaleType="fitCenter"
+                            android:visibility="gone" />
+
+                        <LinearLayout
+                            android:id="@+id/previewPlaceholder"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:padding="40dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="📷"
+                                android:textSize="44sp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="10dp"
+                                android:text="请拍摄喷雾测试板的正面照片"
+                                android:textSize="15sp"
+                                android:textColor="@color/text_main" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:text="确保光照均匀，四角定位标记清晰可见"
+                                android:textSize="13sp"
+                                android:textColor="@color/text_sub" />
+                        </LinearLayout>
+                    </FrameLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- 角标类型选择 -->
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="拖动四角的圆点修正位置；开启吸附后放大镜下实时扫描红点并锁定（绿圈）。双击某角回弹到自动检测位置。"
-                    android:textColor="@color/text_sub"
-                    android:textSize="13sp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+                    app:cardCornerRadius="12dp"
+                    app:cardBackgroundColor="@color/card"
+                    app:strokeWidth="0dp">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAnalyze"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="16dp"
-            android:text="开始分析水量"
-            app:cornerRadius="12dp" />
-    </LinearLayout>
-</ScrollView>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="角标类型"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_main" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_marginTop="10dp">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/modeRedDot"
+                                android:layout_width="0dp"
+                                android:layout_height="42dp"
+                                android:layout_weight="1"
+                                android:layout_marginEnd="6dp"
+                                android:text="红点标记"
+                                android:textSize="14sp"
+                                app:cornerRadius="8dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/modeAruco"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="42dp"
+                                android:layout_weight="1"
+                                android:layout_marginStart="6dp"
+                                android:text="ArUco 角标"
+                                android:textSize="14sp"
+                                app:cornerRadius="8dp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/modeTip"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:text="使用设备四角的红色圆点标记（默认方案）"
+                            android:textSize="12sp"
+                            android:textColor="@color/text_sub" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- 操作按钮：未选图 -->
+                <LinearLayout
+                    android:id="@+id/actionNoImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="14dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTakePhoto"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:text="📷 拍照"
+                        app:cornerRadius="10dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPick"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        android:text="📁 从相册选择"
+                        app:cornerRadius="10dp" />
+                </LinearLayout>
+
+                <!-- 操作按钮：已选图 -->
+                <LinearLayout
+                    android:id="@+id/actionHasImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="14dp"
+                    android:visibility="gone">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnReselect"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:text="重新选择"
+                        app:cornerRadius="10dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnStartDetect"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        android:text="开始识别"
+                        app:cornerRadius="10dp" />
+                </LinearLayout>
+
+                <!-- 拍照提示 -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardBackgroundColor="@color/card"
+                    app:strokeWidth="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="拍照提示"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_main" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="1. 确保测试板正面朝向相机"
+                            android:textSize="13sp"
+                            android:textColor="@color/text_sub" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="2. 光线均匀，避免反光和阴影"
+                            android:textSize="13sp"
+                            android:textColor="@color/text_sub" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="3. 四角标记请勿被遮挡"
+                            android:textSize="13sp"
+                            android:textColor="@color/text_sub" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="4. 图片分辨率建议 3000×2000 以上"
+                            android:textSize="13sp"
+                            android:textColor="@color/text_sub" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <!-- ============ Step 1: 四角识别 ============ -->
+            <LinearLayout
+                android:id="@+id/step1Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="14dp"
+                android:visibility="gone">
+
+                <!-- 步骤标题卡 -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="12dp"
+                    app:cardBackgroundColor="@color/card"
+                    app:strokeWidth="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="14dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🔍"
+                            android:textSize="24sp" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:layout_marginStart="10dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="四角识别"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_main" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="拖动四角圆点修正位置"
+                                android:textSize="12sp"
+                                android:textColor="@color/text_sub" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- 四角编辑画布 -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardBackgroundColor="@color/card"
+                    app:strokeWidth="0dp">
+
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="8dp">
+
+                        <com.example.waterdetect.ui.CornerEditView
+                            android:id="@+id/cornerView"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content" />
+                    </FrameLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- 识别与吸附控制 -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardBackgroundColor="@color/card"
+                    app:strokeWidth="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnDetect"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="46dp"
+                            android:text="重新自动检测四角"
+                            app:cornerRadius="10dp" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="14dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="放大镜倍数"
+                                android:textSize="14sp"
+                                android:textColor="@color/text_main" />
+
+                            <SeekBar
+                                android:id="@+id/magZoom"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:layout_marginStart="12dp"
+                                android:max="16"
+                                android:progress="1" />
+
+                            <TextView
+                                android:id="@+id/magZoomVal"
+                                android:layout_width="44dp"
+                                android:layout_height="wrap_content"
+                                android:gravity="end"
+                                android:text="1×"
+                                android:textSize="14sp"
+                                android:textColor="@color/text_main" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="14dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="🧲 拖动时自动吸附到标记中心"
+                                android:textSize="14sp"
+                                android:textColor="@color/text_main" />
+
+                            <Switch
+                                android:id="@+id/snapSwitch"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:checked="true" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="吸附强度"
+                                android:textSize="14sp"
+                                android:textColor="@color/text_main" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/snapWeak"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="40dp"
+                                android:layout_weight="1"
+                                android:layout_marginStart="10dp"
+                                android:text="弱"
+                                android:textSize="13sp"
+                                app:cornerRadius="8dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/snapMid"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="40dp"
+                                android:layout_weight="1"
+                                android:layout_marginStart="6dp"
+                                android:text="中"
+                                android:textSize="13sp"
+                                app:cornerRadius="8dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/snapStrong"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="40dp"
+                                android:layout_weight="1"
+                                android:layout_marginStart="6dp"
+                                android:text="强"
+                                android:textSize="13sp"
+                                app:cornerRadius="8dp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:text="越强越容易吸住，但自由拖动空间越小；双击某角回弹到自动检测位置。"
+                            android:textSize="12sp"
+                            android:textColor="@color/text_sub" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- 上一步 / 下一步 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="14dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPrevStep"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:text="上一步"
+                        app:cornerRadius="10dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnNextStep"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        android:text="下一步 · 逐管找球"
+                        app:cornerRadius="10dp" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

@@ -1,205 +1,518 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="@color/bg">
 
+    <!-- 顶部蓝色标题栏 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:background="@drawable/bg_nav_gradient"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="14dp">
 
         <TextView
-            android:layout_width="match_parent"
+            android:id="@+id/btnBack"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="④ 结果"
-            android:textStyle="bold"
+            android:text="‹"
+            android:textSize="26sp"
+            android:textColor="#ffffff"
+            android:paddingEnd="12dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="分析结果"
             android:textSize="18sp"
-            android:textColor="@color/text_main" />
+            android:textStyle="bold"
+            android:textColor="#ffffff" />
+    </LinearLayout>
 
-        <com.google.android.material.card.MaterialCardView
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            app:cardCornerRadius="12dp"
-            app:cardBackgroundColor="@color/card">
+            android:orientation="vertical"
+            android:padding="16dp">
 
-            <FrameLayout
+            <!-- 统计卡片：最大/最小/平均/CV -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="8dp">
-
-                <ImageView
-                    android:id="@+id/resultImage"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:adjustViewBounds="true"
-                    android:scaleType="fitCenter" />
-            </FrameLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            app:cardCornerRadius="12dp"
-            app:cardBackgroundColor="@color/card">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="平滑度"
-                    android:textColor="@color/text_main" />
+                app:cardCornerRadius="12dp"
+                app:cardBackgroundColor="@color/card"
+                app:strokeWidth="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/smooth1" style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1"
-                        android:text="关闭" android:textSize="12sp" />
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/smooth3" style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1"
-                        android:layout_marginStart="4dp" android:text="弱" android:textSize="12sp" />
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/smooth5" style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1"
-                        android:layout_marginStart="4dp" android:text="中" android:textSize="12sp" />
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/smooth7" style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1"
-                        android:layout_marginStart="4dp" android:text="强" android:textSize="12sp" />
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/smooth9" style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1"
-                        android:layout_marginStart="4dp" android:text="极强" android:textSize="12sp" />
-                </LinearLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnDiag"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="44dp"
-                    android:layout_marginTop="12dp"
-                    android:text="查看诊断图" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            app:cardCornerRadius="12dp"
-            app:cardBackgroundColor="@color/card">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="左右间距微调（mm，补偿角标与首/末管偏移）"
-                    android:textColor="@color/text_main" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="14dp"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp">
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:orientation="vertical"
+                        android:gravity="center">
 
                         <TextView
-                            android:layout_width="match_parent"
+                            android:id="@+id/statMax"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0.0"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/success" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="最大值 mm"
+                            android:textSize="11sp"
+                            android:textColor="@color/text_sub" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:gravity="center">
+
+                        <TextView
+                            android:id="@+id/statMin"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0.0"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/danger" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="最小值 mm"
+                            android:textSize="11sp"
+                            android:textColor="@color/text_sub" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:gravity="center">
+
+                        <TextView
+                            android:id="@+id/statAvg"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0.0"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_main" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="平均值 mm"
+                            android:textSize="11sp"
+                            android:textColor="@color/text_sub" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:gravity="center">
+
+                        <TextView
+                            android:id="@+id/statCv"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0.0%"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/success" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="CV 变异系数"
+                            android:textSize="11sp"
+                            android:textColor="@color/text_sub" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 分析结果图 -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardCornerRadius="12dp"
+                app:cardBackgroundColor="@color/card"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="分析结果图"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_main" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnDiag"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:minWidth="0dp"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"
+                            android:text="查看诊断图"
+                            android:textSize="12sp"
+                            app:cornerRadius="8dp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:id="@+id/resultImage"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:adjustViewBounds="true"
+                        android:scaleType="fitCenter" />
+
+                    <TextView
+                        android:id="@+id/successText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text=""
+                        android:textSize="13sp"
+                        android:textColor="@color/text_sub" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 水量分布曲线 -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardCornerRadius="12dp"
+                app:cardBackgroundColor="@color/card"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="水量分布曲线："
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_main" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="水量高度(mm)"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_sub" />
+
+                    <com.example.waterdetect.ui.ChartView
+                        android:id="@+id/chartView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:gravity="center"
+                        android:text="分格(1格=12mm)"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_sub" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 平滑度调节 -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardCornerRadius="12dp"
+                app:cardBackgroundColor="@color/card"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="平滑度调节："
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_main" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="10dp">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/smooth1"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="5dp"
+                            android:text="关闭"
+                            android:textSize="13sp"
+                            app:cornerRadius="8dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/smooth3"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="2dp"
+                            android:layout_marginEnd="5dp"
+                            android:text="弱"
+                            android:textSize="13sp"
+                            app:cornerRadius="8dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/smooth5"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="2dp"
+                            android:layout_marginEnd="5dp"
+                            android:text="中"
+                            android:textSize="13sp"
+                            app:cornerRadius="8dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/smooth7"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="2dp"
+                            android:layout_marginEnd="5dp"
+                            android:text="强"
+                            android:textSize="13sp"
+                            app:cornerRadius="8dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/smooth9"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="2dp"
+                            android:text="极强"
+                            android:textSize="13sp"
+                            app:cornerRadius="8dp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:text="窗口越大曲线越平滑；关闭保留原始检测值（可能有尖刺）。切换后曲线与结果图红线同步更新。"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_sub" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 左右间距微调 -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardCornerRadius="12dp"
+                app:cardBackgroundColor="@color/card"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="左右间距微调（像素 px）"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_main" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="10dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="左间距"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_sub" />
+                            android:textSize="14sp"
+                            android:textColor="@color/text_main" />
 
                         <EditText
                             android:id="@+id/leftMarginInput"
-                            android:layout_width="match_parent"
-                            android:layout_height="44dp"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="8dp"
                             android:inputType="numberDecimal"
                             android:text="9"
-                            android:gravity="center"
                             android:textSize="14sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="12dp"
-                        android:orientation="vertical">
 
                         <TextView
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginStart="16dp"
                             android:text="右间距"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_sub" />
+                            android:textSize="14sp"
+                            android:textColor="@color/text_main" />
 
                         <EditText
                             android:id="@+id/rightMarginInput"
-                            android:layout_width="match_parent"
-                            android:layout_height="44dp"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="8dp"
                             android:inputType="numberDecimal"
                             android:text="9"
-                            android:gravity="center"
                             android:textSize="14sp" />
                     </LinearLayout>
-                </LinearLayout>
 
-                <TextView
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="正视图按 1px=1mm 输出，px 即毫米；用于补偿角标与首/末管的实际偏移（如视差），改动即重新检测。"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_sub" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 操作按钮 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="14dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnToggleTable"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:text="显示数据表"
+                    app:cornerRadius="10dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCopyData"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:text="复制数据"
+                    app:cornerRadius="10dp" />
+            </LinearLayout>
+
+            <!-- 数据表格 -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardTable"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:visibility="gone"
+                app:cardCornerRadius="12dp"
+                app:cardBackgroundColor="@color/card"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="正视图 1px=1mm，数值即毫米；用于补偿四角角标与首/末管的实际偏移（如视差）。"
-                    android:textSize="11sp"
-                    android:textColor="@color/text_sub" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-        <TextView
-            android:id="@+id/successText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:textColor="@color/text_main"
-            android:textSize="14sp" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="水位数据明细（mm）"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_main" />
 
-        <HorizontalScrollView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp">
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp">
 
-            <TextView
-                android:id="@+id/waterList"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/text_sub"
-                android:textSize="12sp"
-                android:fontFamily="monospace" />
-        </HorizontalScrollView>
-    </LinearLayout>
-</ScrollView>
+                        <TextView
+                            android:id="@+id/waterList"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="monospace"
+                            android:text=""
+                            android:textSize="13sp"
+                            android:textColor="@color/text_main" />
+                    </HorizontalScrollView>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
