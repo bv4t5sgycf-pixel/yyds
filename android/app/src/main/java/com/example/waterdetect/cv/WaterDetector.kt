@@ -206,9 +206,9 @@ object WaterDetector {
         val prof = DoubleArray(w)
         for (y in 0 until bh) {
             val ptr = band.ptr(y)
-            for (x in 0 until w) prof[x] += (ptr.get(x).toInt() and 0xFF)
+            for (x in 0 until w) prof[x] += (ptr.get(x.toLong()).toInt() and 0xFF)
         }
-        if (bh > 0) for (x in 0 until w) prof[x] /= bh
+        if (bh > 0) for (x in 0 until w) prof[x] = prof[x] / bh
         band.release(); gray.release()
         return prof
     }
@@ -284,7 +284,9 @@ object WaterDetector {
                 val pk = peaks[k].toDouble()
                 if (ideal - win <= pk && pk <= ideal + win) {
                     val key = Pair(abs(pk - ideal), -prof[peaks[k]])
-                    if (key < bestKey) { bestKey = key; bestJ = k }
+                    if (key.first < bestKey.first || (key.first == bestKey.first && key.second < bestKey.second)) {
+                        bestKey = key; bestJ = k
+                    }
                 }
             }
             if (bestJ >= 0) {

@@ -85,8 +85,10 @@ class HistoryActivity : AppCompatActivity() {
             val card = MaterialCardView(this).apply {
                 radius = 12f
                 strokeWidth = 0
-                cardBackgroundColor = android.content.res.ColorStateList.valueOf(
-                    ContextCompat.getColor(context, R.color.card)
+                setCardBackgroundColor(
+                    android.content.res.ColorStateList.valueOf(
+                        ContextCompat.getColor(context, R.color.card)
+                    )
                 )
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
