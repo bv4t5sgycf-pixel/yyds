@@ -204,9 +204,12 @@ object WaterDetector {
         val band = Mat(gray, Rect(0, y0, w, y1 - y0))
         val bh = band.rows()
         val prof = DoubleArray(w)
+        // 整行一次性读入 ByteArray（单次 JNI 调用，远快于逐字节 get），
+        // 累加用显式赋值（复合赋值 += 在该 Kotlin 编译器上报 No set method 错误）。
+        val row = ByteArray(w)
         for (y in 0 until bh) {
-            val ptr = band.ptr(y)
-            for (x in 0 until w) prof[x] += (ptr.get(x.toLong()).toInt() and 0xFF)
+            band.ptr(y).get(row)
+            for (x in 0 until w) prof[x] = prof[x] + (row[x].toInt() and 0xFF)
         }
         if (bh > 0) for (x in 0 until w) prof[x] = prof[x] / bh
         band.release(); gray.release()
