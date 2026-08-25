@@ -19,22 +19,22 @@ object CornerDetector {
 
     private val DEFAULT_CORNERS: Map<String, List<DefaultCorner>> = mapOf(
         "Board1008" to listOf(
-            DefaultCorner("TL", "#e74c3c", 0.12, 0.12),
-            DefaultCorner("TR", "#2ecc71", 0.88, 0.12),
-            DefaultCorner("BL", "#3498db", 0.12, 0.88),
-            DefaultCorner("BR", "#f39c12", 0.88, 0.88)
+            DefaultCorner("TL", "#e74c3c", 0.10, 0.40),
+            DefaultCorner("TR", "#2ecc71", 0.90, 0.40),
+            DefaultCorner("BL", "#3498db", 0.15, 0.62),
+            DefaultCorner("BR", "#f39c12", 0.85, 0.62)
         ),
         "Board1200" to listOf(
-            DefaultCorner("TL", "#e74c3c", 0.12, 0.12),
-            DefaultCorner("TR", "#2ecc71", 0.88, 0.12),
-            DefaultCorner("BL", "#3498db", 0.12, 0.88),
-            DefaultCorner("BR", "#f39c12", 0.88, 0.88)
+            DefaultCorner("TL", "#e74c3c", 0.10, 0.40),
+            DefaultCorner("TR", "#2ecc71", 0.90, 0.40),
+            DefaultCorner("BL", "#3498db", 0.15, 0.62),
+            DefaultCorner("BR", "#f39c12", 0.85, 0.62)
         ),
         "Board4000" to listOf(
-            DefaultCorner("TL", "#e74c3c", 0.12, 0.12),
-            DefaultCorner("TR", "#2ecc71", 0.88, 0.12),
-            DefaultCorner("BL", "#3498db", 0.12, 0.88),
-            DefaultCorner("BR", "#f39c12", 0.88, 0.88)
+            DefaultCorner("TL", "#e74c3c", 0.03, 0.40),
+            DefaultCorner("TR", "#2ecc71", 0.97, 0.40),
+            DefaultCorner("BL", "#3498db", 0.05, 0.62),
+            DefaultCorner("BR", "#f39c12", 0.95, 0.62)
         )
     )
 
