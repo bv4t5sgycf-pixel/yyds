@@ -170,6 +170,8 @@ class CornerEditView @JvmOverloads constructor(
             MotionEvent.ACTION_DOWN -> {
                 val idx = nearestCorner(event.x, event.y)
                 if (idx < 0) return false
+                // 按在角点上：立即禁止父容器（ScrollView）拦截，避免拖动时页面跟着滚动
+                parent?.requestDisallowInterceptTouchEvent(true)
                 val now = System.currentTimeMillis()
                 if (now - lastDownTime < 300 && idx == lastDownIdx) {
                     // 双击回弹到自动检测位置
@@ -224,6 +226,8 @@ class CornerEditView @JvmOverloads constructor(
                 }
                 draggingIdx = -1
                 fingerView = null; centerView = null; snapActive = false
+                // 拖动结束：恢复父容器（ScrollView）的滚动能力
+                parent?.requestDisallowInterceptTouchEvent(false)
                 invalidate()
                 return true
             }
