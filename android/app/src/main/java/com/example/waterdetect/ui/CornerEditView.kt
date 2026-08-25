@@ -83,6 +83,24 @@ class CornerEditView @JvmOverloads constructor(
         val bmp = bitmap ?: return
         canvas.drawBitmap(bmp, null, Rect(0, 0, width, dispH), paint)
 
+        // 四角虚线连线，形成矩形框，便于区分各角
+        if (corners.size == 4) {
+            val path = Path().apply {
+                val x0 = (corners[0].rx * width).toFloat()
+                val y0 = (corners[0].ry * dispH).toFloat()
+                val x1 = (corners[1].rx * width).toFloat()
+                val y1 = (corners[1].ry * dispH).toFloat()
+                val x2 = (corners[2].rx * width).toFloat()
+                val y2 = (corners[2].ry * dispH).toFloat()
+                val x3 = (corners[3].rx * width).toFloat()
+                val y3 = (corners[3].ry * dispH).toFloat()
+                moveTo(x0, y0); lineTo(x1, y1)
+                lineTo(x3, y3); lineTo(x2, y2)
+                close()
+            }
+            canvas.drawPath(path, dashLinePaint)
+        }
+
         // 四角圆点
         for (c in corners) {
             val cx = (c.rx * width).toFloat()
