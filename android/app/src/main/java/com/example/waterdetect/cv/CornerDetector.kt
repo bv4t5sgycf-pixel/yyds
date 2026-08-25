@@ -114,20 +114,31 @@ object CornerDetector {
         val hier = Mat()
         opencv_imgproc.findContours(opened, contours, hier, opencv_imgproc.RETR_EXTERNAL, opencv_imgproc.CHAIN_APPROX_SIMPLE)
 
-        val minArea = small.cols() * small.rows() * 0.00005
+        val smallW = small.cols(); val smallH = small.rows()
+        val minArea = smallW * smallH * 0.00005
         val cands = mutableListOf<Cand>()
         for (k in 0 until contours.size().toInt()) {
             val cnt = contours.get(k.toLong())
             val area = opencv_imgproc.contourArea(cnt)
-            if (area < minArea) continue
             val rect = opencv_imgproc.boundingRect(cnt)
             val bw = rect.width(); val bh = rect.height()
             if (bw < 1 || bh < 1) continue
-            val aspect = max(bw, bh).toDouble() / (min(bw, bh) + 1e-6)
-            if (aspect > 4.0) continue
-            val peri = opencv_imgproc.arcLength(cnt, true)
-            val circ = if (peri > 0) (4 * Math.PI * area / (peri * peri + 1e-6)) else 0.0
-            if (circ < 0.15) continue
+            // 触碰图像边缘的轮廓：红点可能被照片边框裁掉一部分（顶/底两角常贴边拍摄），
+            // 形状过滤放宽（面积 1/4、长宽比 8），否则半截红点会被当成"太扁/不圆"丢弃
+            val touchesBorder = rect.x() <= 1 || rect.y() <= 1 ||
+                rect.x() + bw >= smallW - 1 || rect.y() + bh >= smallH - 1
+            if (touchesBorder) {
+                if (area < minArea / 4) continue
+                val aspectB = max(bw, bh).toDouble() / (min(bw, bh) + 1e-6)
+                if (aspectB > 8.0) continue
+            } else {
+                if (area < minArea) continue
+                val aspect = max(bw, bh).toDouble() / (min(bw, bh) + 1e-6)
+                if (aspect > 4.0) continue
+                val peri = opencv_imgproc.arcLength(cnt, true)
+                val circ = if (peri > 0) (4 * Math.PI * area / (peri * peri + 1e-6)) else 0.0
+                if (circ < 0.15) continue
+            }
             val mom = opencv_imgproc.moments(cnt)
             if (mom.m00() == 0.0) continue
             val cx = mom.m10() / mom.m00()
